@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XR Autograder Submission</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; background: #f4f4f4; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; }
+    label { display: block; margin-top: 1rem; }
+    input, select { width: 100%; padding: 0.5rem; margin-top: 0.3rem; }
+    button { margin-top: 1.5rem; padding: 0.7rem 1rem; background: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .result { margin-top: 2rem; padding: 1rem; border-radius: 5px; background: #e7f3fe; border-left: 6px solid #2196F3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>XR Autograder Submission</h2>
+    <form id="upload-form">
+      <label for="name">Student Name</label>
+      <input type="text" id="name" name="name" required>
+
+      <label for="pid">Student PID</label>
+      <input type="text" id="pid" name="pid" required>
+
+      <label for="architect">Architect Name</label>
+      <input type="text" id="architect" name="architect" placeholder="e.g. Bjarke Ingels" required>
+
+      <label for="file">Upload PDF</label>
+      <input type="file" id="file" name="file" accept="application/pdf" required>
+
+      <button type="submit">Submit for Grading</button> 
+    </form>
+
+    <div id="results" class="result" style="display:none;"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("upload-form");
+    const resultsDiv = document.getElementById("results");
+
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+
+      resultsDiv.style.display = "block";
+      resultsDiv.innerHTML = "<strong>Grading in progress...</strong> Please wait.";
+
+      try {
+        const response = await fetch("http://localhost:5001/", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Response received:", result); // Debug log
+
+        if (result.error) {
+          resultsDiv.innerHTML = `<strong>Error:</strong> ${result.error}`;
+        } else {
+            resultsDiv.innerHTML = `
+                <strong>Grade:</strong> ${result.grade} (${result.score}%)<br><br>
+                <strong>Detailed Rubric Evaluation:</strong><br>
+                <div style="white-space: pre-wrap; background: #fff; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; max-height: 500px; overflow-y: auto; margin-bottom: 1rem;">
+                    ${result.detailed_evaluation}
+                </div>
+                <strong>Comments:</strong><br>
+                <div style="white-space: pre-wrap; background: #fff; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; max-height: 500px; overflow-y: auto;">
+                    ${result.feedback}
+                </div>
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button onclick="window.print()" style="padding: 0.5rem 1rem; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Results</button>
+                </div>
+                `;
+        }
+      } catch (err) {
+        console.error("Error details:", err); // Debug log
+        resultsDiv.innerHTML = `<strong>Request failed:</strong> ${err.message}<br>
+                               <p>Please check the browser console for more details.</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

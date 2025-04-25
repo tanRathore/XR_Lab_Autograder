@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XR Autograder Admin</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 2rem; 
+      background: #f4f4f4; 
+      margin: 0;
+    }
+    .container { 
+      max-width: 1200px; 
+      margin: auto; 
+      background: white; 
+      padding: 2rem; 
+      border-radius: 10px; 
+      box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+    }
+    h1, h2 { 
+      text-align: center; 
+      color: #333;
+    }
+    .submissions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+    .submissions-table th, .submissions-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .submissions-table th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+    .submissions-table tr:hover {
+      background-color: #f5f5f5;
+    }
+    .grade-A { color: #4CAF50; font-weight: bold; }
+    .grade-B { color: #2196F3; font-weight: bold; }
+    .grade-C { color: #FF9800; font-weight: bold; }
+    .grade-D, .grade-F { color: #F44336; font-weight: bold; }
+    .details-panel {
+      display: none;
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #f9f9f9;
+      border-radius: 5px;
+      border-left: 5px solid #2196F3;
+    }
+    .details-panel h3 {
+      margin-top: 0;
+    }
+    .details-panel pre {
+      white-space: pre-wrap;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 5px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .comparison-panel {
+      display: none;
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #f9f9f9;
+      border-radius: 5px;
+      border-left: 5px solid #4CAF50;
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .comparison-table th, .comparison-table td {
+      padding: 0.5rem;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+    .comparison-table th {
+      background-color: #f2f2f2;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 0.5rem;
+    }
+    .btn:hover {
+      background: #0b7dda;
+    }
+    .btn-success {
+      background: #4CAF50;
+    }
+    .btn-success:hover {
+      background: #3e8e41;
+    }
+    .btn-danger {
+      background: #F44336;
+    }
+    .btn-danger:hover {
+      background: #d32f2f;
+    }
+    .controls {
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    .search-box {
+      padding: 0.5rem;
+      width: 300px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .filter-controls {
+      display: flex;
+      gap: 1rem;
+    }
+    .filter-controls select {
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>XR Autograder Admin</h1>
+    <p>View and compare student submissions</p>
+    
+    <div class="controls">
+      <input type="text" id="search" class="search-box" placeholder="Search by name or PID...">
+      <div class="filter-controls">
+        <select id="grade-filter">
+          <option value="">All Grades</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+          <option value="F">F</option>
+        </select>
+        <select id="architect-filter">
+          <option value="">All Architects</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="category-view" style="margin: 2rem 0; padding: 1rem; background: #f9f9f9; border-radius: 5px;">
+      <h3>Category Scores</h3>
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <select id="category-select" style="padding: 0.5rem;">
+          <option value="">Select Category</option>
+          <option value="architect_chosen">Architect Selection & Scope</option>
+          <option value="doc_and_slides">Organization & Document Setup</option>
+          <option value="bio_750_words">Biographical Content (750 words)</option>
+          <option value="bio_references">Citation of Architect Biography</option>
+          <option value="image_quality">Selection & Quality of Images</option>
+          <option value="image_citations">Image Citation & Attribution</option>
+          <option value="10_buildings_with_images">Coverage of 10 Famous Buildings</option>
+          <option value="image_relevance">Image Relevance</option>
+          <option value="personal_bio_photo">Personal Bio & Photo</option>
+          <option value="presentation_polish">Overall Completeness & Presentation</option>
+        </select>
+      </div>
+      <div id="category-scores" style="margin-top: 1rem;"></div>
+    </div>
+    
+    <table class="submissions-table">
+      <thead>
+        <tr>
+          <th>Student Name</th>
+          <th>PID</th>
+          <th>Architect</th>
+          <th>Grade</th>
+          <th>Score</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="submissions-body">
+        <!-- Submissions will be loaded here -->
+      </tbody>
+    </table>
+    
+    <div id="details-panel" class="details-panel">
+      <h3>Submission Details</h3>
+      <div id="details-content"></div>
+      <button class="btn btn-danger" onclick="hideDetails()">Close</button>
+    </div>
+    
+    <div id="comparison-panel" class="comparison-panel">
+      <h3>Compare Submissions</h3>
+      <div id="comparison-content"></div>
+      
+      <div id="weights-section" style="margin-top: 2rem;">
+        <h4>Category Weights</h4>
+        <div id="weights-content"></div>
+        <button class="btn btn-success" onclick="applyWeights()">Apply Weights</button>
+      </div>
+      
+      <button class="btn btn-danger" onclick="hideComparison()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Store all submissions
+    let allSubmissions = [];
+    let selectedSubmissions = [];
+    
+    // Store original scores for reset functionality
+    let originalScores = [];
+    
+    // Load submissions when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSubmissions();
+      
+      // Set up search and filter event listeners
+      document.getElementById('search').addEventListener('input', filterSubmissions);
+      document.getElementById('grade-filter').addEventListener('change', filterSubmissions);
+      document.getElementById('architect-filter').addEventListener('change', filterSubmissions);
+      document.getElementById('category-select').addEventListener('change', updateCategoryScores);
+    });
+    
+    // Load submissions from the API
+    function loadSubmissions() {
+      fetch('/api/submissions')
+        .then(response => response.json())
+        .then(data => {
+          allSubmissions = data;
+          
+          // Populate architect filter
+          const architects = [...new Set(data.map(s => s.architect_name))];
+          const architectFilter = document.getElementById('architect-filter');
+          
+          architects.forEach(architect => {
+            const option = document.createElement('option');
+            option.value = architect;
+            option.textContent = architect;
+            architectFilter.appendChild(option);
+          });
+          
+          // Display submissions
+          displaySubmissions(data);
+        })
+        .catch(error => {
+          console.error('Error loading submissions:', error);
+          alert('Error loading submissions. Please try again.');
+        });
+    }
+    
+    // Display submissions in the table
+    function displaySubmissions(submissions) {
+      const tbody = document.getElementById('submissions-body');
+      tbody.innerHTML = '';
+      
+      submissions.forEach(submission => {
+        const row = document.createElement('tr');
+        
+        // Format date
+        const date = new Date(submission.timestamp.replace(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/, '$1-$2-$3T$4:$5:$6'));
+        const formattedDate = date.toLocaleString();
+        
+        // Add grade class
+        const gradeClass = `grade-${submission.grade.charAt(0)}`;
+        
+        row.innerHTML = `
+          <td>${submission.student_name}</td>
+          <td>${submission.student_pid}</td>
+          <td>${submission.architect_name}</td>
+          <td class="${gradeClass}">${submission.grade}</td>
+          <td>${submission.score}%</td>
+          <td>${formattedDate}</td>
+          <td>
+            <button class="btn" onclick="viewDetails('${submission.student_pid}', '${submission.timestamp}')">View</button>
+            <button class="btn btn-success" onclick="selectForComparison('${submission.student_pid}', '${submission.timestamp}')">Compare</button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+    
+    // Filter submissions based on search and filters
+    function filterSubmissions() {
+      const searchTerm = document.getElementById('search').value.toLowerCase();
+      const gradeFilter = document.getElementById('grade-filter').value;
+      const architectFilter = document.getElementById('architect-filter').value;
+      
+      const filtered = allSubmissions.filter(submission => {
+        const matchesSearch = 
+          submission.student_name.toLowerCase().includes(searchTerm) || 
+          submission.student_pid.toLowerCase().includes(searchTerm);
+        
+        const matchesGrade = !gradeFilter || submission.grade.startsWith(gradeFilter);
+        const matchesArchitect = !architectFilter || submission.architect_name === architectFilter;
+        
+        return matchesSearch && matchesGrade && matchesArchitect;
+      });
+      
+      displaySubmissions(filtered);
+    }
+    
+    // View submission details
+    function viewDetails(pid, timestamp) {
+      const submission = allSubmissions.find(s => s.student_pid === pid && s.timestamp === timestamp);
+      if (!submission) return;
+      
+      const detailsPanel = document.getElementById('details-panel');
+      const detailsContent = document.getElementById('details-content');
+      
+      // Format the detailed evaluation
+      const formattedEvaluation = submission.detailed_evaluation.replace(/\n/g, '<br>');
+      
+      detailsContent.innerHTML = `
+        <h4>${submission.student_name} (${submission.student_pid}) - ${submission.architect_name}</h4>
+        <p><strong>Grade:</strong> ${submission.grade} (${submission.score}%)</p>
+        <p><strong>Date:</strong> ${new Date(submission.timestamp.replace(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/, '$1-$2-$3T$4:$5:$6')).toLocaleString()}</p>
+        
+        <h4>Summary Scores:</h4>
+        <table class="comparison-table">
+          <tr>
+            <th>Category</th>
+            <th>Score</th>
+          </tr>
+          <tr><td>1. Architect Selection & Scope</td><td>${submission.rubric_scores.architect_chosen}/5</td></tr>
+          <tr><td>2. Organization & Document Setup</td><td>${submission.rubric_scores.doc_and_slides}/5</td></tr>
+          <tr><td>3. Biographical Content (750 words)</td><td>${submission.rubric_scores.bio_750_words}/5</td></tr>
+          <tr><td>4. Citation of Architect Biography</td><td>${submission.rubric_scores.bio_references}/5</td></tr>
+          <tr><td>5. Selection & Quality of Images</td><td>${submission.rubric_scores.image_quality}/5</td></tr>
+          <tr><td>6. Image Citation & Attribution</td><td>${submission.rubric_scores.image_citations}/5</td></tr>
+          <tr><td>7. Coverage of 10 Famous Buildings</td><td>${submission.rubric_scores['10_buildings_with_images']}/5</td></tr>
+          <tr><td>8. Image Relevance</td><td>${submission.rubric_scores.image_relevance}/5</td></tr>
+          <tr><td>9. Personal Bio & Photo</td><td>${submission.rubric_scores.personal_bio_photo}/5</td></tr>
+          <tr><td>10. Overall Completeness & Presentation</td><td>${submission.rubric_scores.overall_completeness || submission.rubric_scores.presentation_polish}/5</td></tr>
+        </table>
+        
+        <h4>Detailed Evaluation:</h4>
+        <pre>${formattedEvaluation}</pre>
+      `;
+      
+      detailsPanel.style.display = 'block';
+    }
+    
+    // Hide details panel
+    function hideDetails() {
+      document.getElementById('details-panel').style.display = 'none';
+    }
+    
+    // Select submission for comparison
+    function selectForComparison(pid, timestamp) {
+      const submission = allSubmissions.find(s => s.student_pid === pid && s.timestamp === timestamp);
+      if (!submission) return;
+      
+      // Check if already selected
+      const index = selectedSubmissions.findIndex(s => s.student_pid === pid && s.timestamp === timestamp);
+      if (index !== -1) {
+        // Remove if already selected
+        selectedSubmissions.splice(index, 1);
+      } else {
+        // Add if not selected (max 3)
+        if (selectedSubmissions.length < 3) {
+          selectedSubmissions.push(submission);
+        } else {
+          alert('You can compare up to 3 submissions at a time.');
+          return;
+        }
+      }
+      
+      // Update comparison panel
+      updateComparisonPanel();
+    }
+    
+    // Update comparison panel
+    function updateComparisonPanel() {
+      const comparisonPanel = document.getElementById('comparison-panel');
+      const comparisonContent = document.getElementById('comparison-content');
+      const weightsContent = document.getElementById('weights-content');
+      
+      if (selectedSubmissions.length === 0) {
+        comparisonPanel.style.display = 'none';
+        return;
+      }
+      
+      // Create comparison table
+      let tableHTML = `
+        <table class="comparison-table">
+          <tr>
+            <th>Category</th>
+            ${selectedSubmissions.map(s => `<th>${s.student_name} (${s.grade})</th>`).join('')}
+            <th>Weighted Average</th>
+          </tr>
+      `;
+      
+      // Get all unique categories
+      const categories = [...new Set(selectedSubmissions.flatMap(s => Object.keys(s.rubric_scores)))];
+      
+      // Create weights inputs
+      let weightsHTML = '<table class="comparison-table"><tr><th>Category</th><th>Weight</th></tr>';
+      
+      // Add rows for each category
+      categories.forEach(category => {
+        const categoryName = category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const scores = selectedSubmissions.map(s => s.rubric_scores[category] || 0);
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+        
+        tableHTML += `
+          <tr>
+            <td>${categoryName}</td>
+            ${selectedSubmissions.map(s => `<td>${s.rubric_scores[category] || 'N/A'}/5</td>`).join('')}
+            <td>${avg.toFixed(2)}/5</td>
+          </tr>
+        `;
+        
+        weightsHTML += `
+          <tr>
+            <td>${categoryName}</td>
+            <td><input type="number" class="weight-input" data-category="${category}" value="1" min="0" step="0.1" style="width: 60px;"></td>
+          </tr>
+        `;
+      });
+      
+      // Add total score row
+      tableHTML += `
+          <tr>
+            <td><strong>Total Score</strong></td>
+            ${selectedSubmissions.map(s => `<td><strong>${s.score}%</strong></td>`).join('')}
+            <td><strong>Weighted Total</strong></td>
+          </tr>
+        </table>
+      `;
+      
+      weightsHTML += '</table>';
+      
+      comparisonContent.innerHTML = tableHTML;
+      weightsContent.innerHTML = weightsHTML;
+      comparisonPanel.style.display = 'block';
+    }
+    
+    // Apply weights to scores
+    function applyWeights() {
+      const weightInputs = document.querySelectorAll('.weight-input');
+      const weights = {};
+      
+      // Collect weights
+      weightInputs.forEach(input => {
+        weights[input.dataset.category] = parseFloat(input.value) || 1;
+      });
+      
+      // Calculate weighted scores for each submission
+      selectedSubmissions.forEach(submission => {
+        let totalWeight = 0;
+        let weightedSum = 0;
+        
+        Object.entries(submission.rubric_scores).forEach(([category, score]) => {
+          const weight = weights[category] || 1;
+          totalWeight += weight;
+          weightedSum += (score / 5) * weight; // Normalize score to 0-1 range
+        });
+        
+        // Calculate weighted percentage
+        const weightedPercentage = (weightedSum / totalWeight) * 100;
+        
+        // Update the display
+        const row = document.querySelector(`tr:has(td:contains('${submission.student_name}'))`);
+        if (row) {
+          const lastCell = row.cells[row.cells.length - 1];
+          lastCell.textContent = `${weightedPercentage.toFixed(2)}%`;
+        }
+      });
+    }
+    
+    // Hide comparison panel
+    function hideComparison() {
+      document.getElementById('comparison-panel').style.display = 'none';
+      selectedSubmissions = [];
+    }
+
+    // Update category scores display
+    function updateCategoryScores() {
+      const category = document.getElementById('category-select').value;
+      const scoresDiv = document.getElementById('category-scores');
+      
+      if (!category) {
+        scoresDiv.innerHTML = '';
+        return;
+      }
+
+      // Create table for category scores
+      let tableHTML = `
+        <table class="comparison-table">
+          <tr>
+            <th>Student Name</th>
+            <th>PID</th>
+            <th>Score</th>
+            <th>Total Score</th>
+            <th>Grade</th>
+          </tr>
+      `;
+
+      // Sort submissions by score in descending order
+      const sortedSubmissions = [...allSubmissions].sort((a, b) => 
+        b.rubric_scores[category] - a.rubric_scores[category]
+      );
+
+      sortedSubmissions.forEach(submission => {
+        const categoryScore = submission.rubric_scores[category];
+        
+        tableHTML += `
+          <tr>
+            <td>${submission.student_name}</td>
+            <td>${submission.student_pid}</td>
+            <td>${categoryScore}/5</td>
+            <td>${submission.score}%</td>
+            <td>${submission.grade}</td>
+          </tr>
+        `;
+      });
+
+      // Add statistics
+      const scores = sortedSubmissions.map(s => s.rubric_scores[category]);
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const max = Math.max(...scores);
+      const min = Math.min(...scores);
+
+      tableHTML += `
+        </table>
+        <div style="margin-top: 1rem; padding: 1rem; background: #fff; border-radius: 5px;">
+          <h4>Statistics</h4>
+          <p>Average Score: ${avg.toFixed(2)}/5</p>
+          <p>Highest Score: ${max}/5</p>
+          <p>Lowest Score: ${min}/5</p>
+        </div>
+      `;
+
+      scoresDiv.innerHTML = tableHTML;
+    }
+  </script>
+</body>
+</html> 
