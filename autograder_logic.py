@@ -217,7 +217,7 @@ def gemini_detailed_rubric_eval(text, architect_name, pdf_path):
 You are evaluating a student's architecture assignment on the architect {architect_name}.
 
 This is a formal submission for university credit. You are receiving the full document as **images**, so you can directly observe the formatting, embedded images, captions, structure, and layout.
-
+Grade and provide feedback in a non-objectifying, student-centered language (e.g., using possessive pronouns like "your work," directly addressing the student, and acknowledging their role in the process).
 ---
 
 ###  How to Grade:
@@ -230,18 +230,8 @@ This is a formal submission for university credit. You are receiving the full do
   - Caption and image attribution clarity
   - Clear distinction between interior vs exterior images
   - Overall layout and visual professionalism
-
----
-
-###  Additional Clarifications:
-
--  Images are embedded (not just links)
--  Captions below images include attribution (URLs or photographer names)
--  A student photo and bio appear on Page 2
--  Table of Contents is present
--  10 buildings are described
--  Redundant links are likely citations, not missing content
-
+- do understand that this is an undergrad course so give them on a much more friendly manner and understanding way , dont bring in anything too complex.
+- dont think a lot about the placement of stuff like (supposed to be on eg page52 but was earlier , placement of personal bio , etc) , that will be very harsh 
 ---
 
 ###  RUBRIC CRITERIA
@@ -253,7 +243,7 @@ Please assess each of the following categories. For every criterion:
 
 Format:
 **[Category Name]**
-Justification: ...
+feedback: ... ( in the feedback specify exactly why points were cut like " you had minor issues with headings or order but generally follows recommended structure. hence a 4 " like cite the exact part from the rubric you used to deduct points )
 Score: x/5
 
 ---
@@ -262,37 +252,44 @@ Score: x/5
 
 **1. Architect Selection & Scope**
 - 5 = Clearly identifies one architect from Book Two, explicitly stated, on-topic
-- 3–4 = Identifies Book Two architect, but clarity or justification could improve
+- 4 = Identifies an architect from Book Two; minor details or justification may be lacking but overall meets the requirement.
+- 3 = Identifies an architect, but there are ambiguities in selection or misalignment with Book Two.
 - 1–2 = Architect unclear, off-topic, or not from Book Two
 
 **2. Organization & Document Setup**
 - 5 = Clear Table of Contents + labeled sections for bio, buildings, refs, student bio
-- 3–4 = Minor issues with layout or missing headers
-- 1–2 = Poor organization, missing sections, or hard to follow
+- 4 = includes most required sections; minor issues with headings or order but generally follows recommended structure.
+- 3 = includes sections but they are not clearly distinguished or organized, causing minor readability issues.
+- 1–2 =  is poorly organized; critical sections (e.g., biography, personal bio) are missing or very difficult to identify.
 
 **3. Biographical Content (750 words)**
-- 5 = Covers who they are, achievements, education, significance, 1st building, typologies
-- 3–4 = Mostly complete, with slight omissions or light detail
+- 5 = Contains a comprehensive 750-word biography that Covers who they are, achievements, education, significance, 1st building, typologies
+- 4 = Biography is approximately 750 words and covers the main topics; minor omissions or slight lack in depth may be present.
+- 3 = Biography is present but is underdeveloped (significant sections missing or less than 750 words) or lacks sufficient detail in one or more areas
 - 1–2 = Underdeveloped or below word count, missing major points
 
 **4. Citation of Architect Biography**
 - 5 = 5–10 academic references, correct APA formatting, includes DOIs and citation counts
-- 3–4 = APA errors or missing DOIs, but still academically relevant
+- 4 = Provides at least 5 references in APA format with minor formatting issues; most citations include DOIs and are appropriate.
+- 3 = Fewer than 5 academic references provided or multiple APA formatting errors; some references may not be entirely credible.
 - 1–2 = Few or no academic references, poor or irrelevant sources
 
 **5. Selection & Quality of Images**
 - 5 = 10 buildings, 3+ exterior + 5+ interior per building, high-res
-- 3–4 = Most buildings meet criteria; a few lack resolution or quantity
+- 4 = Most of the 10 buildings include the required number of high-resolution images; images generally meet quality standards with a few exceptions.
+- 3 = Some buildings have insufficient or lower-quality images (e.g., missing interior images, resolution below recommended); overall image selection is uneven.
 - 1–2 = Many buildings missing images or poor quality
 
 **6. Image Citation & Attribution**
 - 5 = Every image has clear, consistent source or photographer citation
-- 3–4 = Most are cited but with some inconsistencies
+- 4 = Most images are properly cited; a few minor citation errors or omissions exist.
+- 3 = Some images have citations while many do not; inconsistency in attribution is evident.
 - 1–2 = Citations mostly missing, inconsistent, or improperly formatted
 
 **7. Coverage of 10 Famous Buildings**
 - 5 = All 10 named + location + significance statement (1–2 sentences)
-- 3–4 = Buildings listed but some lack significance or location
+- 4 = Covers all 10 buildings with essential details provided; however, some buildings may have less detailed significance statements or image suggestions might be less robust.
+- 3 = Details for fewer than 10 buildings or several entries lack adequate information (e.g., missing significance statements, incomplete image details).
 - 1–2 = Several missing or incomplete building descriptions
 
 **8. Image Relevance**
@@ -307,11 +304,12 @@ Score: x/5
 
 **10. Overall Completeness & Presentation**
 - 5 = Fully polished, clean layout, minimal repetition, suitable for web/publication
-- 3–4 = Clear submission, but lacks design polish or has formatting repetition
+- 4 = Overall work is solid with minor formatting or content issues; nearly all requirements are satisfied; presentation is clear.
+- 3 = Work meets basic requirements but has several issues with formatting, clarity, or content completeness; presentation lacks polish in certain areas.
 - 1–2 = Sloppy or rushed presentation; visual issues hurt readability
 
 ---
-
+Give a table of all the scores with the criterion 
  Please start your rubric-based analysis below:
 """
 
@@ -453,41 +451,55 @@ def run_autograder_full(pdf_path, architect_name="Bjarke Ingels", debug=False):
     
     # Extract summary scores from the detailed evaluation
     summary_scores = {}
-    summary_pattern = r"\*\*Final Summary:\*\*\s*(.*?)(?=\n\n|$)"
-    summary_match = re.search(summary_pattern, detailed_evaluation_text, re.DOTALL)
     
-    if summary_match:
-        summary_text = summary_match.group(1)
-        score_pattern = r"(\d+)\.\s+([^:]+):\s+(\d+)/5"
-        matches = re.findall(score_pattern, summary_text)
+    # Look for the Summary Table in the response
+    # First, try to find the table section
+    table_section_pattern = r"(?:Summary Table|Here's a table summarizing the scores:|Here's a table summarizing your scores:).*?(?=\n\n|$)"
+    table_section_match = re.search(table_section_pattern, detailed_evaluation_text, re.DOTALL | re.IGNORECASE)
+    
+    if table_section_match:
+        table_section = table_section_match.group(0)
+        print("Found Summary Table section, extracting scores...")
         
-        for _, category, score in matches:
-            score = int(score)
-            if "Architect Selection" in category:
-                summary_scores["architect_chosen"] = score
-            elif "Organization" in category:
-                summary_scores["doc_and_slides"] = score
-            elif "Biographical Content" in category:
-                summary_scores["bio_750_words"] = score
-            elif "Citation of Architect Biography" in category:
-                summary_scores["bio_references"] = score
-            elif "Selection & Quality of Images" in category:
-                summary_scores["image_quality"] = score
-            elif "Image Citation" in category:
-                summary_scores["image_citations"] = score
-            elif "Coverage of 10 Famous Buildings" in category:
-                summary_scores["10_buildings_with_images"] = score
-            elif "Image Relevance" in category:
-                summary_scores["image_relevance"] = score
-            elif "Personal Bio" in category:
-                summary_scores["personal_bio_photo"] = score
-            elif "Overall Completeness" in category:
-                summary_scores["overall_completeness"] = score
-                summary_scores["presentation_polish"] = score  # Keep both for backward compatibility
+        # Extract all table rows
+        # This pattern matches lines with | Category | Score | format
+        table_rows = re.findall(r"\|\s*([^|]+)\s*\|\s*(\d+)/5\s*\|", table_section)
+        
+        if table_rows:
+            print(f"Found {len(table_rows)} score entries in the table")
+            
+            # Map table categories to our internal keys
+            category_mapping = {
+                "Architect Selection & Scope": "architect_chosen",
+                "Organization & Document Setup": "doc_and_slides",
+                "Biographical Content": "bio_750_words",
+                "Citation of Architect Biography": "bio_references",
+                "Selection & Quality of Images": "image_quality",
+                "Image Citation & Attribution": "image_citations",
+                "Coverage of 10 Famous Buildings": "10_buildings_with_images",
+                "Image Relevance": "image_relevance",
+                "Personal Bio & Photo": "personal_bio_photo",
+                "Overall Completeness & Presentation": "presentation_polish"
+            }
+            
+            # Process each row
+            for category, score in table_rows:
+                category = category.strip()
+                score = int(score)
+                print(f"Extracted: {category} = {score}/5")
+                
+                # Find the matching internal key
+                for table_category, internal_key in category_mapping.items():
+                    if table_category in category or category in table_category:
+                        summary_scores[internal_key] = score
+                        # Also set overall_completeness if it's the presentation score
+                        if internal_key == "presentation_polish":
+                            summary_scores["overall_completeness"] = score
+                        break
     
     # Use summary scores if available, otherwise fall back to extracted scores
     if summary_scores:
-        print("Using summary scores for grade calculation")
+        print("Using summary table scores for grade calculation")
         scores_to_use = summary_scores
     else:
         print("Using extracted scores for grade calculation")
@@ -523,14 +535,14 @@ def run_autograder_full(pdf_path, architect_name="Bjarke Ingels", debug=False):
         grade = "D-"
     else:
         grade = "F"
-
+    
     # Print the scores and grade for debugging
     print(f"Total score: {total}/{max_total} = {final_percent}%")
     print(f"Grade: {grade}")
     print("Scores used for calculation:")
     for key, value in scores_to_use.items():
         print(f"  {key}: {value}/5")
-
+    
     return {
         "rubric_scores": scores_to_use,
         "final_percent": final_percent,
@@ -540,3 +552,4 @@ def run_autograder_full(pdf_path, architect_name="Bjarke Ingels", debug=False):
 
 if __name__ == "__main__":
     result = run_autograder_full("/path/to/sample.pdf", "Bjarke Ingels", debug=True)
+ 

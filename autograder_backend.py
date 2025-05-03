@@ -11,6 +11,7 @@ import hashlib
 from functools import wraps
 from werkzeug.utils import secure_filename
 from autograder_logic import run_autograder_full, text_model, vision_model, extract_text_from_pdf
+from autograder_with_factors import run_autograder_with_factors  # <-- Import the new function
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -125,12 +126,24 @@ def grade_student():
         detailed_evaluation_text = result.get("detailed_evaluation", "No detailed evaluation available.")
 
         feedback_prompt = f"""
-You are writing feedback for {student_name} (PID: {student_pid}) on their architecture submission.
-Summarize their performance across categories, highlight strengths, and offer suggestions for improvement.
+You are an instructor providing constructive feedback on a student's university architecture assignment.
+The student is {student_name} (PID: {student_pid}). The assignment is about the architect: {architect_name}.
 Their final score is {result['final_percent']}% and grade is {result['grade']}.
+
+Please ONLY give specific, actionable suggestions for improvement on their architecture submission. 
+- Focus on the content, structure, images, citations, and clarity of their work.
+- Give concrete examples of what could be improved (e.g., "Instead of X, you could do Y").
+- Do NOT mention anything about programming, servers, databases, or unrelated technical topics.
+- Do NOT praise the student's scholarly effort.
+- Write in a friendly, undergraduate-appropriate tone.
+
+Begin your feedback below:
 """
 
         gemini_feedback = text_model.generate_content([feedback_prompt]).text
+
+        # ALSO run the factor-operationalizer
+        factor_result = run_autograder_with_factors(filepath, architect_name)
 
         # Save submission data
         save_submission(
@@ -150,7 +163,9 @@ Their final score is {result['final_percent']}% and grade is {result['grade']}.
             "detailed_evaluation": detailed_evaluation_text,
             "score": result["final_percent"],
             "grade": result["grade"],
-            "rubric_scores": result["rubric_scores"]
+            "rubric_scores": result["rubric_scores"],
+            "factor_table": factor_result["factor_table"].to_dict(orient="records"),
+            "factor_reflection": factor_result["reflection"]
         })
 
     except Exception as e:
