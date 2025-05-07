@@ -5,19 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Statistics Analysis</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 5px;
             background-color: #f5f5f5;
+            font-size: 18px;
+        }
+        .statement-section {
+            margin-bottom: 40px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .statement-title {
+            font-size: 2.8em;
+            color: #2196f3;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .statement-description {
+            font-size: 1.2em;
+            line-height: 1.6;
+            color: #333;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1800px;
             margin: 0 auto;
             background-color: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 2.5em;
+        }
+        h2 {
+            font-size: 2em;
+        }
+        h3 {
+            font-size: 1.5em;
         }
         .stats-section {
             margin-bottom: 30px;
@@ -28,10 +57,11 @@
         }
         .file-input {
             margin: 20px 0;
-            padding: 20px;
+            padding: 15px;
             border: 2px dashed #ccc;
             border-radius: 4px;
             text-align: center;
+            font-size: 1.2em;
         }
         .summary {
             display: grid;
@@ -44,11 +74,15 @@
             padding: 15px;
             border-radius: 4px;
             text-align: center;
+            font-size: 1.2em;
+        }
+        .summary-card p {
+            font-size: 1.4em;
         }
         .ranking-section {
             margin-top: 30px;
             background: #fff;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
@@ -56,6 +90,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
+            font-size: 1.2em;
         }
         .ranking-table th,
         .ranking-table td {
@@ -67,55 +102,193 @@
             background-color: #f8f9fa;
             font-weight: bold;
         }
-        .ranking-table tr:hover {
-            background-color: #f5f5f5;
-        }
         .distribution-controls {
             margin: 10px 0;
             padding: 10px;
             background: #f8f9fa;
             border-radius: 4px;
+            font-size: 1.2em;
         }
         .distribution-controls select {
             margin-left: 10px;
             padding: 5px;
             border-radius: 4px;
             border: 1px solid #ddd;
-        }
-        .criterion-distributions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 30px;
-            margin-top: 20px;
-            padding: 15px;
-        }
-        .criterion-chart-container {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            height: 350px;
-            transition: all 0.3s ease;
-        }
-        .criterion-chart-container:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            font-size: 1em;
         }
         .stats-summary {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
+            font-size: 1.2em;
         }
         .stats-title {
-            font-size: 1.1em;
+            font-size: 1.3em;
             font-weight: 600;
             margin-bottom: 10px;
         }
         .stats-details {
-            font-size: 0.95em;
+            font-size: 1.1em;
             line-height: 1.5;
             color: #495057;
+        }
+        .matrix-section {
+            margin-bottom: 30px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+            overflow: hidden; /* Prevent overflow */
+        }
+        .matrix-container {
+            overflow-x: auto; /* Enable horizontal scrolling */
+            max-width: 100%;
+            margin-bottom: 15px;
+        }
+        .matrix-table {
+            margin: 0 auto;
+            max-width: 1600px;
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            table-layout: fixed; /* Fixed layout for more consistent sizing */
+        }
+        .matrix-legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 0 auto 15px auto;
+            max-width: 800px;
+        }
+        .matrix-legend span {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .matrix-table th,
+        .matrix-table td {
+            text-align: center;
+            padding: 10px 8px;
+            border: 1px solid rgba(0,0,0,0.05);
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .matrix-table th {
+            font-weight: bold;
+            min-width: 60px; /* Minimum width for columns */
+            max-width: 120px; /* Maximum width to prevent stretching */
+        }
+        .matrix-table td:first-child,
+        .matrix-table th:first-child {
+            text-align: left;
+            font-weight: bold;
+            position: sticky; /* Keep student names visible when scrolling horizontally */
+            left: 0;
+            background-color: white; /* Give it a background so it's not transparent */
+            z-index: 1; /* Ensure it stays on top of other cells */
+            border-right: 2px solid #ddd; /* Add a stronger border to separate it */
+        }
+        /* Give the corner cell a higher z-index */
+        .matrix-table th:first-child {
+            z-index: 2;
+        }
+        .edit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 2px 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 5px;
+            display: none;
+        }
+        .matrix-table td:hover .edit-btn {
+            display: inline;
+        }
+        .edit-score-input {
+            width: 40px;
+            text-align: center;
+        }
+        .matrix-table td {
+            position: relative;
+            height: 24px;
+            line-height: 24px;
+            vertical-align: middle;
+        }
+        .matrix-table td .edit-btn {
+            position: absolute;
+            top: 50%;
+            right: 5px;
+            transform: translateY(-50%);
+            z-index: 5;
+        }
+        .score-value {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .bulk-edit-controls {
+            margin: 10px 0;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .bulk-edit-btn {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .bulk-edit-btn:hover {
+            background-color: #f57c00;
+        }
+        .undo-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .undo-btn:hover {
+            background-color: #d32f2f;
+        }
+        .undo-btn:disabled {
+            background-color: #ffcdd2;
+            cursor: not-allowed;
+        }
+        .criterion-btn {
+            margin: 5px;
+            padding: 8px 12px;
+            background-color: #e1f5fe;
+            border: 1px solid #81d4fa;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+        .criterion-btn:hover {
+            background-color: #b3e5fc;
+        }
+        .deliverable-header {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #1976d2;
         }
     </style>
 </head>
@@ -127,7 +300,10 @@
             <input type="file" id="csvFile" accept=".csv">
             <p>Please select a grade CSV file</p>
         </div>
-
+        <div class="statement-section">
+            <h2 class="statement-title">Deliverable Details</h2>
+            <div id="deliverableDetails"></div>
+        </div>
         <div class="stats-section">
             <h2>Overall Grade Distribution</h2>
             <div class="distribution-controls">
@@ -135,6 +311,7 @@
                 <select id="distributionType">
                     <option value="fixed">Fixed Ranges (0-100)</option>
                     <option value="dynamic">Dynamic Ranges</option>
+                    <option value="curve" selected>Simple Curve</option>
                 </select>
             </div>
             <div class="chart-container">
@@ -147,6 +324,46 @@
             <div class="chart-container">
                 <canvas id="criterionDistribution"></canvas>
             </div>
+        </div>
+
+        <div class="matrix-section">
+            <h2>Score Matrix (Students × Criteria)</h2>
+            <div style="margin-bottom: 15px; padding: 10px; background-color: #e8f4fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+                <p style="margin: 0; color: #333;"><strong>Note for TAs:</strong> Criteria are sorted by mean score from highest to lowest. This helps identify stronger and weaker areas across the class.</p>
+            </div>
+            <div class="bulk-edit-controls">
+                <h3 style="margin-top: 0;">Bulk Edit Scores</h3>
+                <div>
+                    <label for="criterionSelect">Select criterion: </label>
+                    <select id="criterionSelect"></select>
+                    <button onclick="addPointToAll()" class="bulk-edit-btn">+1 Point to All Students</button>
+                    <button id="undoButton" onclick="undoLastEdit()" class="undo-btn" disabled>Undo Last Edit</button>
+                </div>
+                <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
+                    <button onclick="exportToCSV()" style="background-color: #4CAF50; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">Export Grades to CSV</button>
+                    <span style="margin-left: 10px; font-style: italic; color: #666;">Save current grades with any changes you've made</span>
+                </div>
+            </div>
+            <div id="criterionButtons" style="margin-top: 10px;">
+                <!-- Criterion buttons will be added here dynamically -->
+            </div>
+            <div class="matrix-container">
+                <div id="scoreMatrix"></div>
+            </div>
+        </div>
+        
+        <div class="ranking-section">
+            <h2>Student Rankings</h2>
+            <div class="bulk-edit-controls">
+                <h3 style="margin-top: 0;">Add Bonus Points</h3>
+                <div>
+                    <label for="bonusPoints">Bonus points to add: </label>
+                    <input type="number" id="bonusPoints" min="1" max="10" value="1" style="width: 60px; padding: 5px;">
+                    <button onclick="addBonusToAll()" class="bulk-edit-btn">Add Bonus to All Students</button>
+                </div>
+                <p style="margin-top: 10px; font-style: italic; color: #666;">This will add bonus points to each student's total score. The change can be reverted using the Undo button.</p>
+            </div>
+            <div id="rankingTable"></div>
         </div>
 
         <div class="summary">
@@ -167,35 +384,36 @@
                 <p id="medianGrade">-</p>
             </div>
         </div>
-
-        <h2>Individual Criterion Distributions (Rank the variance from top to bottom)</h2>
-        <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #2196f3;">
-            <p style="margin: 0; color: #333; line-height: 1.6;">
-                <strong>Variance Threshold Calculation:</strong> The threshold for identifying high-variance criteria is calculated dynamically using statistical methods. We first calculate the mean (μ) and standard deviation (σ) of all criterion variances. The threshold is then set at μ + σ, meaning any criterion with variance above this threshold (approximately the top 16% based on normal distribution) is flagged for review. This adaptive approach ensures the threshold adjusts automatically to the overall grade distribution pattern.
-            </p>
-        </div>
-        <div id="criterionDistributions" class="criterion-distributions"></div>
-        
-        <div class="ranking-section">
-            <h2>Student Rankings</h2>
-            <div id="rankingTable"></div>
-        </div>
     </div>
 
     <script>
-        // Load test.csv file by default when page loads
+        // Global variables to store original data for comparison
+        let originalStudentScores = null;
+        let originalMaxPossibleScore = null;
+
+        // Initialize the script
         window.addEventListener('load', function() {
+            // Initialize edit history
+            window.editHistory = [];
+            
+            // Load test.csv as the default CSV file
             fetch('test.csv')
                 .then(response => response.text())
                 .then(data => {
                     processGrades(data);
+                    // Store original data for comparison
+                    originalStudentScores = JSON.parse(JSON.stringify(window.currentStudentScores));
+                    originalMaxPossibleScore = window.currentMaxPossibleScore;
                 })
                 .catch(error => {
                     console.error('Error loading test.csv:', error);
+                    // If loading test.csv fails, show a message
+                    document.getElementById('deliverableDetails').innerHTML = 
+                        '<p>Please upload a CSV file to view analysis.</p>';
                 });
         });
 
-        // Keep the file input handler for optional file uploads
+        // File input handler for CSV uploads
         document.getElementById('csvFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
@@ -203,36 +421,80 @@
             reader.onload = function(event) {
                 const csvData = event.target.result;
                 processGrades(csvData);
+                // Reset edit history on new file
+                window.editHistory = [];
+                document.getElementById('undoButton').disabled = true;
+                
+                // Store original data for comparison
+                originalStudentScores = JSON.parse(JSON.stringify(window.currentStudentScores));
+                originalMaxPossibleScore = window.currentMaxPossibleScore;
             };
             
             reader.readAsText(file);
         });
 
         function processGrades(csvData) {
-            const rows = csvData.split('\n');
-            const headers = rows[0].split(',');
+            const parsed = Papa.parse(csvData, {header: true, skipEmptyLines: true});
+            const processedData = parsed.data;
             
-            // Get column indices from headers
-            const columnIndices = {
-                criterion: headers.indexOf('Criterion'),
-                score: headers.indexOf('Score'),
-                max: headers.indexOf('Max'),
-                file: headers.indexOf('File'),
-                architect: headers.indexOf('Architect')
-            };
+            // Build the students data model
+            window.students = [];
+            const studentMap = {};
 
-            const data = rows.slice(1)
-                .map(row => row.split(','))
-                .filter(row => row.length > 1);
+            processedData.forEach(row => {
+                const studentId = row['File']; // or use a better unique id if available
+                const deliverableId = row['Deliverable'];
+                const criterionId = row['Criterion'];
+                const score = parseFloat(row['Score']);
+
+                // Find or create student
+                if (!studentMap[studentId]) {
+                    studentMap[studentId] = {
+                        id: studentId,
+                        deliverables: [],
+                        finalScore: 0,
+                        status: 'original'
+                    };
+                    window.students.push(studentMap[studentId]);
+                }
+                const student = studentMap[studentId];
+
+                // Find or create deliverable
+                let deliver = student.deliverables.find(d => d.id === deliverableId);
+                if (!deliver) {
+                    deliver = {
+                        id: deliverableId,
+                        criteria: [],
+                        score: 0,
+                        status: 'original'
+                    };
+                    student.deliverables.push(deliver);
+                }
+
+                // Add criterion
+                deliver.criteria.push({
+                    id: criterionId,
+                    score: isNaN(score) ? 0 : score,
+                    status: 'original'
+                });
+            });
+
+            // Calculate scores directly without calling recalcDeliverable functions
+            window.students.forEach(student => {
+                student.deliverables.forEach(deliver => {
+                    deliver.score = deliver.criteria.reduce((sum, c) => sum + c.score, 0);
+                });
+                student.finalScore = student.deliverables.reduce((sum, d) => sum + d.score, 0);
+            });
 
             // Process criterion scores and student data
             const criterionScores = {};
             const studentScores = {};
 
-            data.forEach(row => {
-                const criterion = row[columnIndices.criterion];
-                const score = parseFloat(row[columnIndices.score]);
-                const fileName = row[columnIndices.file];
+            processedData.forEach(row => {
+                const criterion = row['Criterion'];
+                const score = parseFloat(row['Score']);
+                const fileName = row['File'];
                 const studentName = fileName.split('_')[0];
 
                 // Process criterion scores
@@ -257,189 +519,9 @@
                 }
             });
 
-            // Create individual criterion distribution charts
-            const criterionContainer = document.getElementById('criterionDistributions');
-            criterionContainer.innerHTML = ''; // Clear existing charts
-
-            // Calculate variances and create sorted array of criteria
-            const criterionVariances = Object.entries(criterionScores).map(([criterion, data]) => {
-                const scores = data.scores;
-                const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-                const variance = scores.reduce((acc, score) => acc + Math.pow(score - mean, 2), 0) / scores.length;
-                const stdDev = Math.sqrt(variance);
-
-                return {
-                    criterion,
-                    data,
-                    variance,
-                    mean,
-                    stdDev
-                };
-            });
-
-            // Calculate variance statistics for threshold determination
-            const varianceValues = criterionVariances.map(c => c.variance);
-            const varianceMean = varianceValues.reduce((a, b) => a + b, 0) / varianceValues.length;
-            const varianceStdDev = Math.sqrt(
-                varianceValues.reduce((acc, val) => acc + Math.pow(val - varianceMean, 2), 0) / varianceValues.length
-            );
-
-            // Set threshold using mean + 1 standard deviation
-            const varianceThreshold = varianceMean + varianceStdDev;
-
-            // Sort and add needsCurving flag based on calculated threshold
-            criterionVariances.sort((a, b) => b.variance - a.variance)
-                .forEach(criterion => {
-                    criterion.needsCurving = criterion.variance > varianceThreshold;
-                });
-
-            criterionVariances.forEach(({criterion, data, variance, mean, stdDev, needsCurving}) => {
-                // Create container for this criterion's chart
-                const chartDiv = document.createElement('div');
-                chartDiv.className = 'criterion-chart-container';
-                
-                // Add statistics summary with dynamic threshold information
-                const statsDiv = document.createElement('div');
-                statsDiv.style.marginBottom = '10px';
-                statsDiv.innerHTML = `
-                    <div style="color: ${needsCurving ? '#d32f2f' : '#2e7d32'}; font-weight: bold; margin-bottom: 5px;">
-                        ${needsCurving ? `⚠️ High variance detected (> ${varianceThreshold.toFixed(3)})` : '✓ Variance within acceptable range'}
-                    </div>
-                    <div style="font-size: 0.9em; color: #666;">
-                        Mean: ${mean.toFixed(2)} | 
-                        Std Dev: ${stdDev.toFixed(2)} | 
-                        Variance: ${variance.toFixed(3)} |
-                        Threshold: ${varianceThreshold.toFixed(3)}
-                    </div>
-                `;
-                chartDiv.appendChild(statsDiv);
-
-                const canvas = document.createElement('canvas');
-                chartDiv.appendChild(canvas);
-                criterionContainer.appendChild(chartDiv);
-
-                // Calculate distribution for this criterion
-                const scores = data.scores;
-                const maxScore = 5;
-                const ranges = [0, 1, 2, 3, 4, 5];
-                const distribution = new Array(ranges.length - 1).fill(0);
-
-                scores.forEach(score => {
-                    if (score === 5) {
-                        distribution[4]++; // Put score of 5 in the last bin (4-5)
-                    } else {
-                        const binIndex = Math.floor(score);
-                        if (binIndex >= 0 && binIndex < distribution.length) {
-                            distribution[binIndex]++;
-                        }
-                    }
-                });
-
-                // Create the chart with modified options
-                new Chart(canvas.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: ['0-1', '1-2', '2-3', '3-4', '4-5'],
-                        datasets: [{
-                            label: 'Number of Students',
-                            data: distribution,
-                            backgroundColor: needsCurving ? 
-                                'rgba(211, 47, 47, 0.5)' : 'rgba(75, 192, 192, 0.5)',
-                            borderColor: needsCurving ? 
-                                'rgba(211, 47, 47, 1)' : 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
-                                }
-                            }
-                        },
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: `Distribution for ${criterion}`
-                            }
-                        }
-                    }
-                });
-            });
-
-            // Calculate criterion distribution using criterion names
-            const criterionLabels = Object.values(criterionScores)
-                .map(criterion => criterion.name)
-                .filter(name => name !== "undefined" && name !== "");
-            
-            const criterionData = Object.values(criterionScores).map(criterion => {
-                const scores = criterion.scores;
-                return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-            });
-
-            // Use actual max scores for each criterion
-            const maxScores = Object.values(criterionScores).map(criterion => criterion.maxScore);
-
-            // Draw criterion distribution chart
-            const ctxCriterion = document.getElementById('criterionDistribution').getContext('2d');
-            if (window.criterionChart) {
-                window.criterionChart.destroy();
-            }
-            window.criterionChart = new Chart(ctxCriterion, {
-                type: 'bar',
-                data: {
-                    labels: criterionLabels,
-                    datasets: [{
-                        label: 'Average Score',
-                        data: criterionData,
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1,
-                        barPercentage: 0.8
-                    }, {
-                        label: 'Maximum Score',
-                        data: maxScores,
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 2,
-                        type: 'line'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 5.5,
-                            title: {
-                                display: true,
-                                text: 'Score'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Criteria'
-                            }
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Criterion Score Distribution'
-                        },
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
-                    }
-                }
-            });
+            // Store for future reference
+            window.criterionScores = criterionScores;
+            window.currentStudentScores = studentScores;
 
             // Calculate overall statistics using student total scores
             const totalGrades = Object.values(studentScores);
@@ -449,97 +531,16 @@
             const sortedGrades = [...totalGrades].sort((a, b) => a - b);
             const median = sortedGrades[Math.floor(sortedGrades.length / 2)];
 
+            // Calculate max possible score based on number of criteria
+            const numberOfCriteria = Object.keys(criterionScores).length;
+            const maxPossibleScore = numberOfCriteria * 5; // Each criterion has max score of 5
+            window.currentMaxPossibleScore = maxPossibleScore;
+
             // Update summary cards
             document.getElementById('averageGrade').textContent = average.toFixed(2);
             document.getElementById('maxGrade').textContent = max.toFixed(2);
             document.getElementById('minGrade').textContent = min.toFixed(2);
             document.getElementById('medianGrade').textContent = median.toFixed(2);
-
-            // Create grade distribution histogram
-            const gradeRanges = [0, 60, 70, 80, 90, 100];
-            const distribution = new Array(gradeRanges.length - 1).fill(0);
-            
-            // Calculate max possible score based on number of criteria
-            const numberOfCriteria = Object.keys(criterionScores).length;
-            const maxPossibleScore = numberOfCriteria * 5; // Each criterion has max score of 5
-            
-            function updateGradeDistribution(type) {
-                const ctx = document.getElementById('gradeDistribution').getContext('2d');
-                let ranges, labels, distributionData;
-                
-                if (type === 'fixed') {
-                    ranges = [0, 60, 70, 80, 90, 100];
-                    labels = ['0-59', '60-69', '70-79', '80-89', '90-100'];
-                    distributionData = new Array(ranges.length - 1).fill(0);
-                    
-                    totalGrades.forEach(grade => {
-                        const percentage = (grade / maxPossibleScore) * 100;
-                        for (let i = 0; i < ranges.length - 1; i++) {
-                            if (percentage >= ranges[i] && percentage <= ranges[i + 1]) {
-                                distributionData[i]++;
-                                break;
-                            }
-                        }
-                    });
-                } else {
-                    // Dynamic ranges based on actual scores
-                    const minGrade = Math.min(...totalGrades);
-                    const maxGrade = Math.max(...totalGrades);
-                    const range = maxGrade - minGrade;
-                    const binSize = range / 5; // Split into 5 equal bins
-                    
-                    ranges = Array.from({length: 6}, (_, i) => minGrade + (binSize * i));
-                    labels = ranges.slice(0, -1).map((val, i) => 
-                        `${val.toFixed(1)}-${ranges[i + 1].toFixed(1)}`
-                    );
-                    
-                    distributionData = new Array(5).fill(0);
-                    totalGrades.forEach(grade => {
-                        for (let i = 0; i < ranges.length - 1; i++) {
-                            if (grade >= ranges[i] && grade < ranges[i + 1]) {
-                                distributionData[i]++;
-                                break;
-                            }
-                        }
-                    });
-                }
-
-                // Update the chart
-                if (window.gradeChart) {
-                    window.gradeChart.destroy();
-                }
-                window.gradeChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Number of Students',
-                            data: distributionData,
-                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
-                                }
-                            }
-                        },
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Grade Distribution'
-                            }
-                        }
-                    }
-                });
-            }
 
             // Add event listener for distribution type change
             document.getElementById('distributionType').addEventListener('change', function(e) {
@@ -547,7 +548,7 @@
             });
 
             // Initial distribution update
-            updateGradeDistribution('fixed');
+            updateGradeDistribution('curve');
 
             // Add ranking table generation with dynamic max score
             const studentRankings = Object.entries(studentScores)
@@ -584,6 +585,1000 @@
 
             // Update ranking table
             document.getElementById('rankingTable').innerHTML = rankingTableHTML;
+
+            // --- Deliverable/Criteria Display Section ---
+            const deliverableMap = {};
+            processedData.forEach(row => {
+                const deliverable = row['Deliverable'];
+                const criterion = row['Criterion'];
+                let description = row['Description'];
+                if (!deliverableMap[deliverable]) {
+                    deliverableMap[deliverable] = new Map();
+                }
+                if (criterion && description && !deliverableMap[deliverable].has(criterion)) {
+                    deliverableMap[deliverable].set(criterion, description);
+                }
+            });
+
+            // Build HTML for deliverable details
+            let deliverableDetailsHTML = '';
+            Object.entries(deliverableMap).forEach(([deliverable, critMap]) => {
+                deliverableDetailsHTML += `<div style="margin-bottom: 30px;">`;
+                deliverableDetailsHTML += `<h3>Deliverable ${deliverable}</h3>`;
+                deliverableDetailsHTML += `<ul>`;
+                critMap.forEach((description, criterion) => {
+                    deliverableDetailsHTML += `<li><strong>${criterion}:</strong> ${description}</li>`;
+                });
+                deliverableDetailsHTML += `</ul></div>`;
+            });
+
+            document.getElementById('deliverableDetails').innerHTML = deliverableDetailsHTML;
+
+            // Calculate criterion distribution using criterion names
+            const criterionLabels = Object.values(criterionScores)
+                .map(criterion => criterion.name)
+                .filter(name => name !== "undefined" && name !== "");
+            
+            const criterionData = Object.values(criterionScores).map(criterion => {
+                const scores = criterion.scores;
+                return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+            });
+
+            // Use actual max scores for each criterion
+            const maxScores = Object.values(criterionScores).map(criterion => criterion.maxScore);
+
+            // Sort the data together
+            const indices = criterionData.map((_, i) => i);
+            indices.sort((a, b) => criterionData[b] - criterionData[a]);
+
+            const sortedLabels = indices.map(i => criterionLabels[i]);
+            const sortedData = indices.map(i => criterionData[i]);
+            const sortedMaxScores = indices.map(i => maxScores[i]);
+
+            // Draw criterion distribution chart
+            const ctxCriterion = document.getElementById('criterionDistribution').getContext('2d');
+            if (window.criterionChart) {
+                window.criterionChart.destroy();
+            }
+            window.criterionChart = new Chart(ctxCriterion, {
+                    type: 'bar',
+                    data: {
+                    labels: sortedLabels,
+                        datasets: [{
+                        label: 'Average Score',
+                        data: sortedData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        barPercentage: 0.8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                            max: 5.5,
+                            title: {
+                                display: true,
+                                text: 'Score'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Criteria'
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                            text: 'Criterion Score Distribution'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+
+            // Render the score matrix
+            renderScoreMatrix();
+        }
+
+        function recalcDeliverableScore(deliver) {
+            deliver.score = deliver.criteria.reduce((sum, c) => sum + c.score, 0);
+        }
+
+        function recalcFinalScore(student) {
+            student.finalScore = student.deliverables.reduce((sum, d) => sum + d.score, 0);
+        }
+
+        function renderScoreMatrix() {
+            if (!window.students) return;
+            
+            // Collect all unique criteria in order
+            const allCriteria = Array.from(new Set(window.students.flatMap(s => s.deliverables.flatMap(d => d.criteria.map(c => c.id)))));
+            
+            // Collect all students
+            const allStudents = window.students;
+            
+            // Build a map: studentId -> {criterionId -> score}
+            const studentCriterionScores = {};
+            allStudents.forEach(student => {
+                studentCriterionScores[student.id] = {};
+                student.deliverables.forEach(deliver => {
+                    deliver.criteria.forEach(crit => {
+                        studentCriterionScores[student.id][crit.id] = crit.score;
+                    });
+                });
+            });
+            
+            // Sort students by total score (highest first)
+            const sortedStudents = [...allStudents].sort((a, b) => b.finalScore - a.finalScore);
+            
+            // Create a mapping of criteria to deliverables
+            const criterionToDeliverable = {};
+            allStudents.forEach(student => {
+                student.deliverables.forEach(deliver => {
+                    deliver.criteria.forEach(crit => {
+                        criterionToDeliverable[crit.id] = deliver.id;
+                    });
+                });
+            });
+            
+            // Calculate mean for each criterion
+            const criterionWithMeans = allCriteria.map(critId => {
+                let sum = 0, count = 0;
+                allStudents.forEach(student => {
+                    const val = studentCriterionScores[student.id][critId];
+                    if (typeof val === 'number') {
+                        sum += val;
+                        count++;
+                    }
+                });
+                const mean = count > 0 ? sum / count : 0;
+                return {
+                    id: critId,
+                    deliverable: criterionToDeliverable[critId] || "Unknown",
+                    mean: mean,
+                    displayMean: count > 0 ? mean.toFixed(2) : '-'
+                };
+            });
+            
+            // Sort criteria by mean score from highest to lowest, except keep bonus_points last if it exists
+            let sortedCriterionWithMeans = [...criterionWithMeans];
+            const bonusIndex = sortedCriterionWithMeans.findIndex(c => c.id === 'bonus_points');
+            
+            if (bonusIndex !== -1) {
+                const bonusCriterion = sortedCriterionWithMeans.splice(bonusIndex, 1)[0];
+                sortedCriterionWithMeans.sort((a, b) => b.mean - a.mean);
+                sortedCriterionWithMeans.push(bonusCriterion); // Add bonus at the end
+            } else {
+                sortedCriterionWithMeans.sort((a, b) => b.mean - a.mean);
+            }
+            
+            // Create arrays of sorted criteria IDs, means and deliverables
+            const sortedCriteriaIds = sortedCriterionWithMeans.map(c => c.id);
+            const sortedMeans = sortedCriterionWithMeans.map(c => c.displayMean);
+            const sortedDeliverables = sortedCriterionWithMeans.map(c => c.deliverable);
+            
+            // Update the criterion dropdown for bulk editing
+            const criterionSelect = document.getElementById('criterionSelect');
+            criterionSelect.innerHTML = '';
+            sortedCriteriaIds.forEach((critId, index) => {
+                const option = document.createElement('option');
+                option.value = critId;
+                option.text = critId;
+                option.dataset.deliverable = sortedDeliverables[index];
+                criterionSelect.appendChild(option);
+            });
+            
+            // Update criterion buttons for quick selection
+            const criterionButtons = document.getElementById('criterionButtons');
+            criterionButtons.innerHTML = '';
+            
+            const uniqueDeliverables = [...new Set(sortedDeliverables)].sort();
+            uniqueDeliverables.forEach(delivId => {
+                const deliverableCriteria = sortedCriteriaIds.filter((_, i) => sortedDeliverables[i] === delivId);
+                
+                if (deliverableCriteria.length > 0) {
+                    const delivLabel = document.createElement('div');
+                    delivLabel.textContent = `Deliverable ${delivId}:`;
+                    delivLabel.style.fontWeight = 'bold';
+                    delivLabel.style.marginTop = '8px';
+                    criterionButtons.appendChild(delivLabel);
+                    
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.style.display = 'flex';
+                    buttonContainer.style.flexWrap = 'wrap';
+                    
+                    deliverableCriteria.forEach(critId => {
+                        const button = document.createElement('button');
+                        button.textContent = critId;
+                        button.className = 'criterion-btn';
+                        button.onclick = function() {
+                            document.getElementById('criterionSelect').value = critId;
+                        };
+                        buttonContainer.appendChild(button);
+                    });
+                    
+                    criterionButtons.appendChild(buttonContainer);
+                }
+            });
+            
+            // Define colors for each deliverable (expandable for more deliverables)
+            const deliverableColors = {};
+            const baseColors = [
+                "#e3f2fd", // light blue
+                "#fce4ec", // light pink
+                "#e8f5e9", // light green
+                "#fff8e1", // light amber
+                "#f3e5f5", // light purple
+                "#e0f7fa", // light cyan
+                "#fff3e0", // light orange
+                "#f1f8e9"  // light lime
+            ];
+            
+            // Get unique deliverables and assign colors
+            uniqueDeliverables.forEach((delivId, index) => {
+                deliverableColors[delivId] = baseColors[index % baseColors.length];
+            });
+            
+            // Build HTML table with sorted criteria and color-coded deliverables
+            let html = '';
+            
+            // Add a color-coded legend for deliverables
+            html += '<div class="matrix-legend">';
+            uniqueDeliverables.forEach(delivId => {
+                html += `<span style="background-color: ${deliverableColors[delivId]};">Deliverable ${delivId}</span>`;
+            });
+            html += '</div>';
+            
+            // Add header showing criteria grouped by deliverable with color coding
+            html += '<table class="matrix-table">';
+            html += '<thead>';
+            html += '<tr><th>Student (Ranked by Score)</th>';
+            sortedCriteriaIds.forEach((critId, i) => {
+                const delivId = sortedDeliverables[i];
+                // Limit column width for bonus_points to prevent stretching
+                const colStyle = critId === 'bonus_points' ? 'style="background-color: ' + deliverableColors[delivId] + '; max-width: 100px;"' : 
+                                'style="background-color: ' + deliverableColors[delivId] + ';"';
+                html += `<th ${colStyle} title="Deliverable ${delivId}">${critId}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            // Add student rows with rankings
+            sortedStudents.forEach((student, index) => {
+                // Just display student name (first part of filename)
+                const studentName = student.id.split('_')[0]; 
+                html += `<tr><td style="font-weight:bold; text-align:left;">${studentName}</td>`;
+                sortedCriteriaIds.forEach((critId, i) => {
+                    const val = studentCriterionScores[student.id][critId];
+                    const delivId = sortedDeliverables[i];
+                    // Add a very light background hint of the deliverable color
+                    const lightBg = `${deliverableColors[delivId]}40`; // 40 is hex for 25% opacity
+                    html += `<td style="background-color: ${lightBg};">
+                        <span class="score-value">${typeof val === 'number' ? val : '-'}</span>
+                        <button class="edit-btn" onclick="editScore('${student.id}', '${critId}', '${delivId}')">Edit</button>
+                    </td>`;
+                });
+                html += '</tr>';
+            });
+            
+            // Add mean row with visual indicator (background color based on mean value)
+            html += '<tr><td style="font-weight:bold; text-align:left;">Mean</td>';
+            sortedMeans.forEach((mean, index) => {
+                // Calculate a background color based on mean (green for high, yellow for middle, red for low)
+                const normalizedScore = typeof mean === 'string' ? 0 : Math.min(parseFloat(mean) / 5, 1);
+                const red = Math.round(255 * (1 - normalizedScore));
+                const green = Math.round(200 * normalizedScore);
+                const blue = 100;
+                const scoreColor = `rgba(${red}, ${green}, ${blue}, 0.7)`;
+                const delivId = sortedDeliverables[index];
+                const delivColor = deliverableColors[delivId];
+                
+                // Blend the score color with the deliverable color for a visual effect that shows both
+                html += `<td style="background-color: ${scoreColor}; border-bottom: 3px solid ${delivColor};">${mean}</td>`;
+            });
+            html += '</tr>';
+            
+            html += '</tbody></table>';
+            document.getElementById('scoreMatrix').innerHTML = html;
+        }
+        
+        function editScore(studentId, criterionId, deliverableId) {
+            // Find the cell with this score
+            const cell = event.target.parentNode;
+            const scoreValue = cell.querySelector('.score-value');
+            const currentScore = parseInt(scoreValue.textContent);
+            
+            // Create an input element
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.max = '5';
+            input.step = '1'; // Integer values only
+            input.value = currentScore;
+            input.className = 'edit-score-input';
+            
+            // Create a save button
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Save';
+            saveBtn.className = 'edit-btn';
+            saveBtn.style.display = 'inline';
+            saveBtn.style.backgroundColor = '#2196F3';
+            
+            // Clear the cell and add the input and save button
+            scoreValue.style.display = 'none';
+            cell.querySelector('.edit-btn').style.display = 'none';
+            cell.appendChild(input);
+            cell.appendChild(saveBtn);
+            
+            // Focus the input
+            input.focus();
+            
+            // Add event listener to save button
+            saveBtn.addEventListener('click', function() {
+                const newScore = parseInt(input.value);
+                
+                // Validate input
+                if (isNaN(newScore) || newScore < 0 || newScore > 5) {
+                    alert('Please enter a valid score between 0 and 5');
+                    return;
+                }
+                
+                // Update the score in the data model
+                const student = window.students.find(s => s.id === studentId);
+                if (student) {
+                    const deliverable = student.deliverables.find(d => d.id === deliverableId);
+                    if (deliverable) {
+                        const criterion = deliverable.criteria.find(c => c.id === criterionId);
+                        if (criterion) {
+                            const oldScore = criterion.score;
+                            
+                            // Only update if there's an actual change
+                            if (oldScore !== newScore) {
+                                criterion.score = newScore;
+                                criterion.status = 'modified';
+                                
+                                // Recalculate scores
+                                recalcDeliverableScore(deliverable);
+                                recalcFinalScore(student);
+                                
+                                // Update the display
+                                scoreValue.textContent = newScore;
+                                scoreValue.style.display = 'inline';
+                                cell.style.backgroundColor = '#FFFF9C'; // Highlight modified scores
+                                
+                                // Remove input and save button
+                                input.remove();
+                                saveBtn.remove();
+                                cell.querySelector('.edit-btn').style.display = '';
+                                
+                                // Refresh the ranking table
+                                refreshRankings();
+                                
+                                alert(`Score updated from ${oldScore} to ${newScore}`);
+                            } else {
+                                alert('No change in score detected.');
+                                // Restore original display
+                                scoreValue.style.display = 'inline';
+                                input.remove();
+                                saveBtn.remove();
+                                cell.querySelector('.edit-btn').style.display = '';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function refreshRankings() {
+            // Recalculate student rankings based on updated scores
+            const studentScores = {};
+            let maxPossibleScore = 0;
+            
+            window.students.forEach(student => {
+                const studentName = student.id.split('_')[0];
+                studentScores[studentName] = student.finalScore;
+                
+                // Calculate max possible score based on the first student's criteria
+                if (maxPossibleScore === 0) {
+                    maxPossibleScore = student.deliverables.reduce((sum, d) => {
+                        return sum + d.criteria.length * 5; // Each criterion has max score of 5
+                    }, 0);
+                }
+            });
+            
+            // Store current scores and max score for later use
+            window.currentStudentScores = studentScores;
+            window.currentMaxPossibleScore = maxPossibleScore;
+            
+            // Update summary statistics
+            const totalGrades = Object.values(studentScores);
+            const average = totalGrades.reduce((a, b) => a + b, 0) / totalGrades.length;
+            const max = Math.max(...totalGrades);
+            const min = Math.min(...totalGrades);
+            const sortedGrades = [...totalGrades].sort((a, b) => a - b);
+            const median = sortedGrades[Math.floor(sortedGrades.length / 2)];
+            
+            // Update summary cards
+            document.getElementById('averageGrade').textContent = average.toFixed(2);
+            document.getElementById('maxGrade').textContent = max.toFixed(2);
+            document.getElementById('minGrade').textContent = min.toFixed(2);
+            document.getElementById('medianGrade').textContent = median.toFixed(2);
+            
+            // Update grade distribution chart
+            const type = document.getElementById('distributionType').value;
+            updateGradeDistribution(type, studentScores, maxPossibleScore);
+            
+            const studentRankings = Object.entries(studentScores)
+                .map(([name, score]) => ({ 
+                    name, 
+                    score,
+                    percentage: (score / maxPossibleScore) * 100
+                }))
+                .sort((a, b) => b.score - a.score);
+            
+            // Generate ranking table HTML
+            const rankingTableHTML = `
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student</th>
+                            <th>Total Score</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${studentRankings.map((student, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${student.name}</td>
+                                <td>${student.score.toFixed(2)} / ${maxPossibleScore}</td>
+                                <td>${student.percentage.toFixed(2)}%</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            // Update ranking table
+            document.getElementById('rankingTable').innerHTML = rankingTableHTML;
+            
+            // Also rerender the score matrix to update mean scores
+            renderScoreMatrix();
+            
+            // Update the criterion chart with new values
+            updateCriterionChart();
+        }
+        
+        function updateCriterionChart() {
+            // Recalculate criterion scores based on the updated student data
+            const criterionScores = {};
+            
+            window.students.forEach(student => {
+                student.deliverables.forEach(deliver => {
+                    deliver.criteria.forEach(crit => {
+                        if (!criterionScores[crit.id]) {
+                            criterionScores[crit.id] = {
+                                name: crit.id,
+                                scores: [],
+                                maxScore: 0
+                            };
+                        }
+                        criterionScores[crit.id].scores.push(crit.score);
+                        criterionScores[crit.id].maxScore = Math.max(criterionScores[crit.id].maxScore, crit.score);
+                    });
+                });
+            });
+
+            // Calculate criterion distribution using criterion names
+            const criterionLabels = Object.values(criterionScores)
+                .map(criterion => criterion.name)
+                .filter(name => name !== "undefined" && name !== "");
+            
+            const criterionData = Object.values(criterionScores).map(criterion => {
+                const scores = criterion.scores;
+                return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+            });
+
+            // Use actual max scores for each criterion
+            const maxScores = Object.values(criterionScores).map(criterion => criterion.maxScore);
+
+            // Sort the data together
+            const indices = criterionData.map((_, i) => i);
+            indices.sort((a, b) => criterionData[b] - criterionData[a]);
+
+            const sortedLabels = indices.map(i => criterionLabels[i]);
+            const sortedData = indices.map(i => criterionData[i]);
+            const sortedMaxScores = indices.map(i => maxScores[i]);
+
+            // Update the criterion distribution chart
+            const ctxCriterion = document.getElementById('criterionDistribution').getContext('2d');
+            if (window.criterionChart) {
+                window.criterionChart.destroy();
+            }
+            window.criterionChart = new Chart(ctxCriterion, {
+                type: 'bar',
+                data: {
+                    labels: sortedLabels,
+                    datasets: [{
+                        label: 'Average Score',
+                        data: sortedData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        barPercentage: 0.8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 5.5,
+                            title: {
+                                display: true,
+                                text: 'Score'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Criteria'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Criterion Score Distribution'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        function addPointToAll() {
+            const criterionSelect = document.getElementById('criterionSelect');
+            const criterionId = criterionSelect.value;
+            const deliverableId = criterionSelect.options[criterionSelect.selectedIndex].dataset.deliverable;
+            
+            if (!criterionId) {
+                alert('Please select a criterion first');
+                return;
+            }
+            
+            // Confirmation
+            if (!confirm(`Are you sure you want to add 1 point to all students for criterion "${criterionId}"?`)) {
+                return;
+            }
+            
+            let changedCount = 0;
+            let notChangedCount = 0;
+            
+            // Store the current state before changes for undo functionality
+            const editState = {
+                criterionId: criterionId,
+                deliverableId: deliverableId,
+                studentsState: []
+            };
+            
+            // Loop through all students and add a point to the selected criterion
+            window.students.forEach(student => {
+                const deliverable = student.deliverables.find(d => d.id === deliverableId);
+                if (deliverable) {
+                    const criterion = deliverable.criteria.find(c => c.id === criterionId);
+                    if (criterion) {
+                        const oldScore = criterion.score;
+                        // Store state for undo
+                        editState.studentsState.push({
+                            studentId: student.id,
+                            oldScore: oldScore
+                        });
+                        
+                        // Ensure score doesn't exceed 5
+                        if (oldScore < 5) {
+                            criterion.score = Math.min(oldScore + 1, 5);
+                            criterion.status = 'modified';
+                            changedCount++;
+                            
+                            // Recalculate scores
+                            recalcDeliverableScore(deliverable);
+                            recalcFinalScore(student);
+                        } else {
+                            notChangedCount++;
+                        }
+                            }
+                        }
+                    });
+            
+            // Add to edit history
+            window.editHistory.push(editState);
+            
+            // Enable undo button
+            document.getElementById('undoButton').disabled = false;
+            
+            // Update the display
+            refreshRankings();
+            
+            // Show results
+            alert(`Added 1 point to ${changedCount} students for criterion "${criterionId}". ${notChangedCount} students already had maximum score.`);
+        }
+
+        function undoLastEdit() {
+            if (!window.editHistory || window.editHistory.length === 0) {
+                alert('No edits to undo');
+                return;
+            }
+            
+            // Get the last edit
+            const lastEdit = window.editHistory.pop();
+            
+            // If that was the last edit in history, disable the undo button
+            if (window.editHistory.length === 0) {
+                document.getElementById('undoButton').disabled = true;
+            }
+            
+            // Check which type of edit state format we have
+            if (lastEdit.action === 'addBonus' && lastEdit.backupState) {
+                // Restore from full backup state for bonus points
+                window.students = JSON.parse(lastEdit.backupState);
+                refreshRankings();
+                alert(`Removed ${lastEdit.bonusPoints} bonus points from all students.`);
+            } else if (lastEdit.action === 'bulkAdd' && lastEdit.backupState) {
+                // Use the full backup state format for bulk add
+                window.students = JSON.parse(lastEdit.backupState);
+                refreshRankings();
+                alert(`Undid +1 point to ${lastEdit.changedStudents.length} students for criterion "${lastEdit.criterionId}"`);
+            } else if (lastEdit.studentsState) {
+                // Use the individual student state format
+                let restoredCount = 0;
+                
+                // Restore scores to previous state
+                lastEdit.studentsState.forEach(state => {
+                    const student = window.students.find(s => s.id === state.studentId);
+                    if (student) {
+                        const deliverable = student.deliverables.find(d => d.id === lastEdit.deliverableId);
+                        if (deliverable) {
+                            const criterion = deliverable.criteria.find(c => c.id === lastEdit.criterionId);
+                            if (criterion) {
+                                // Only restore if different (to handle students who already had max scores)
+                                if (criterion.score !== state.oldScore) {
+                                    criterion.score = state.oldScore;
+                                    criterion.status = 'modified';
+                                    restoredCount++;
+                                    
+                                    // Recalculate scores
+                                    recalcDeliverableScore(deliverable);
+                                    recalcFinalScore(student);
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Update the display
+                refreshRankings();
+                
+                // Show results
+                alert(`Reverted ${restoredCount} score changes for criterion "${lastEdit.criterionId}".`);
+            } else {
+                alert('Unable to undo the last edit - unknown format');
+            }
+        }
+
+        function exportToCSV() {
+            // Create CSV content from the current data
+            let csvContent = 'Criterion,Score,Max,File,Architect,Description,Deliverable\n';
+            
+            // Get all criterion descriptions from the deliverable details section
+            const criterionDescriptions = {};
+            document.querySelectorAll('#deliverableDetails li').forEach(li => {
+                const text = li.textContent || li.innerText;
+                const match = text.match(/^([^:]+):\s*(.*)/);
+                if (match && match.length >= 3) {
+                    criterionDescriptions[match[1].trim()] = match[2].trim();
+                }
+            });
+            
+            // Loop through all students
+            window.students.forEach(student => {
+                const fileName = student.id;
+                // Extract architect name if available (might not be accurate depending on data)
+                let architect = '';
+                // Simple extraction - in a real-world scenario, you might have this data stored properly
+                if (fileName.includes('_')) {
+                    architect = fileName.split('_')[0];
+                }
+                
+                // Loop through all deliverables and criteria
+                student.deliverables.forEach(deliverable => {
+                    const deliverableId = deliverable.id;
+                    
+                    deliverable.criteria.forEach(criterion => {
+                        const criterionId = criterion.id;
+                        const score = criterion.score;
+                        const maxScore = 5; // Fixed max score 
+                        
+                        // Get description for this criterion
+                        const description = criterionDescriptions[criterionId] || '';
+                        
+                        // Add row to CSV
+                        csvContent += `"${criterionId}",${score},${maxScore},"${fileName}","${architect}","${description}",${deliverableId}\n`;
+                    });
+                });
+            });
+            
+            // Create a Blob and download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'updated_grades.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            
+            // Trigger download
+            link.click();
+            
+            // Clean up
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+            
+            alert('Grades exported to CSV file.');
+        }
+
+        // Modified updateGradeDistribution function that can handle different data sources
+        window.updateGradeDistribution = function(type, specificStudentScores = null, specificMaxScore = null) {
+            const ctx = document.getElementById('gradeDistribution').getContext('2d');
+            let labels, distributionData, originalDistributionData, chartType = 'bar', chartLabel = 'Number of Students';
+
+            // Use provided scores or default to window values
+            const studentScores = specificStudentScores || window.currentStudentScores;
+            const maxPossibleScore = specificMaxScore || window.currentMaxPossibleScore;
+            
+            if (!studentScores || Object.keys(studentScores).length === 0) return;
+            
+            // Calculate grades as percentages
+            const totalGrades = Object.values(studentScores);
+            const percentages = totalGrades.map(grade => (grade / maxPossibleScore) * 100);
+            
+            // Check if we have original data and if it's different from current data
+            const hasOriginalData = originalStudentScores && 
+                                   JSON.stringify(studentScores) !== JSON.stringify(originalStudentScores);
+            
+            // Calculate original percentages if available
+            let originalPercentages = [];
+            if (hasOriginalData) {
+                const originalTotalGrades = Object.values(originalStudentScores);
+                originalPercentages = originalTotalGrades.map(grade => 
+                    (grade / originalMaxPossibleScore) * 100);
+            }
+
+            if (type === 'curve') {
+                // Simple curve: histogram as a line chart
+                chartType = 'line';
+                chartLabel = 'Current Distribution';
+
+                // Create bins (e.g., 20 bins from 0 to 100)
+                const binCount = 20;
+                const binSize = 100 / binCount;
+                labels = [];
+                distributionData = new Array(binCount).fill(0);
+                originalDistributionData = new Array(binCount).fill(0);
+
+                for (let i = 0; i < binCount; i++) {
+                    labels.push(`${Math.round(i * binSize)}-${Math.round((i + 1) * binSize)}`);
+                }
+
+                percentages.forEach(percentage => {
+                    let bin = Math.floor(percentage / binSize);
+                    if (bin >= binCount) bin = binCount - 1;
+                    distributionData[bin]++;
+                });
+                
+                // Fill original data bins if available
+                if (hasOriginalData) {
+                    originalPercentages.forEach(percentage => {
+                        let bin = Math.floor(percentage / binSize);
+                        if (bin >= binCount) bin = binCount - 1;
+                        originalDistributionData[bin]++;
+                    });
+                }
+            } else {
+                // Original bar chart logic
+                let ranges, labelsArr;
+                if (type === 'fixed') {
+                    ranges = [0, 60, 70, 80, 90, 100];
+                    labelsArr = ['0-59', '60-69', '70-79', '80-89', '90-100'];
+                } else {
+                    const minGrade = Math.min(...percentages);
+                    const maxGrade = Math.max(...percentages);
+                    const range = maxGrade - minGrade;
+                    const binSize = range / 5;
+                    ranges = Array.from({length: 6}, (_, i) => minGrade + (binSize * i));
+                    labelsArr = ranges.slice(0, -1).map((val, i) => `${val.toFixed(1)}-${ranges[i + 1].toFixed(1)}`);
+                }
+                labels = labelsArr;
+                distributionData = new Array(ranges.length - 1).fill(0);
+                originalDistributionData = new Array(ranges.length - 1).fill(0);
+                
+                percentages.forEach(percentage => {
+                    for (let i = 0; i < ranges.length - 1; i++) {
+                        if (percentage >= ranges[i] && percentage <= ranges[i + 1]) {
+                            distributionData[i]++;
+                            break;
+                        }
+                    }
+                });
+                
+                // Fill original data bins if available
+                if (hasOriginalData) {
+                    originalPercentages.forEach(percentage => {
+                        for (let i = 0; i < ranges.length - 1; i++) {
+                            if (percentage >= ranges[i] && percentage <= ranges[i + 1]) {
+                                originalDistributionData[i]++;
+                                break;
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Update the chart
+            if (window.gradeChart) {
+                window.gradeChart.destroy();
+            }
+            
+            // Prepare datasets array - always include current distribution
+            const datasets = [{
+                label: 'Current Distribution',
+                data: distributionData,
+                backgroundColor: chartType === 'bar' ? 'rgba(54, 162, 235, 0.5)' : 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3 // smooth curve
+            }];
+            
+            // Add original distribution if different from current
+            if (hasOriginalData) {
+                datasets.push({
+                    label: 'Original Distribution',
+                    data: originalDistributionData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5], // dashed line
+                    fill: false,
+                    tension: 0.3
+                });
+            }
+            
+            window.gradeChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Students'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Percentage'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: type === 'curve' ? 'Grade Distribution (Curve)' : 'Grade Distribution'
+                        },
+                        legend: {
+                            display: hasOriginalData, // only show legend if we have two datasets
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        };
+
+        function addBonusToAll() {
+            const bonusPoints = parseInt(document.getElementById('bonusPoints').value);
+            
+            if (isNaN(bonusPoints) || bonusPoints <= 0) {
+                alert('Please enter a valid positive number for bonus points');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to add ${bonusPoints} bonus points to all students?`)) {
+                return;
+            }
+            
+            // Store current state for undo
+            const backupState = JSON.stringify(window.students);
+            const changedStudents = [];
+            
+            // Add bonus points to each student
+            window.students.forEach(student => {
+                // Create a special "bonus" deliverable if it doesn't exist
+                let bonusDeliverable = student.deliverables.find(d => d.id === 'bonus');
+                if (!bonusDeliverable) {
+                    bonusDeliverable = {
+                        id: 'bonus',
+                        criteria: [],
+                        score: 0,
+                        status: 'modified'
+                    };
+                    student.deliverables.push(bonusDeliverable);
+                }
+                
+                // Look for existing bonus criterion
+                let bonusCriterion = bonusDeliverable.criteria.find(c => c.id === 'bonus_points');
+                
+                // Store old score for undo
+                const oldScore = student.finalScore;
+                changedStudents.push({
+                    studentId: student.id,
+                    oldScore: oldScore
+                });
+                
+                if (!bonusCriterion) {
+                    // Create new bonus criterion
+                    bonusCriterion = {
+                        id: 'bonus_points',
+                        score: bonusPoints,
+                        status: 'modified'
+                    };
+                    bonusDeliverable.criteria.push(bonusCriterion);
+                } else {
+                    // Add to existing bonus
+                    bonusCriterion.score += bonusPoints;
+                    bonusCriterion.status = 'modified';
+                }
+                
+                // Recalculate scores
+                recalcDeliverableScore(bonusDeliverable);
+                recalcFinalScore(student);
+            });
+            
+            // Save the edit for undo
+            window.editHistory.push({
+                action: 'addBonus',
+                bonusPoints: bonusPoints,
+                changedStudents: changedStudents,
+                backupState: backupState
+            });
+            
+            // Enable the undo button
+            document.getElementById('undoButton').disabled = false;
+            
+            // Update the display
+            refreshRankings();
+            
+            alert(`Added ${bonusPoints} bonus points to all students.`);
         }
     </script>
 </body>
