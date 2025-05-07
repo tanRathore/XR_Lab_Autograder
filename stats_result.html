@@ -74,7 +74,7 @@
             padding: 15px;
             border-radius: 4px;
             text-align: center;
-            font-size: 1.2em;
+            font-size: 1.0em;
         }
         .summary-card p {
             font-size: 1.4em;
@@ -121,7 +121,7 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
-            font-size: 1.2em;
+            font-size: 1.4em;
         }
         .stats-title {
             font-size: 1.3em;
@@ -330,7 +330,6 @@
                         <span style="color:rgba(200,200,0,0.8);font-weight:bold;">C=70%</span>, 
                         <span style="color:rgba(200,100,0,0.8);font-weight:bold;">D=60%</span>
                     </li>
-                    <li>Click on any threshold line to see students who scored at or above that grade</li>
                     <li>Dotted gray lines show class percentiles (25th, 50th, 75th)</li>
                 </ul>
             </div>
@@ -818,7 +817,7 @@
                     delivLabel.textContent = `Deliverable ${delivId}:`;
                     delivLabel.style.fontWeight = 'bold';
                     delivLabel.style.marginTop = '8px';
-                    delivLabel.style.fontSize = '1.1em';
+                    delivLabel.style.fontSize = '1.9em';
                     delivLabel.style.color = '#333';
                     criterionButtons.appendChild(delivLabel);
                     
@@ -1587,7 +1586,7 @@
                             
                             // Draw grade label
                             ctx.fillStyle = threshold.color;
-                            ctx.font = 'bold 16px Arial';
+                            ctx.font = 'bold 19px Arial';
                             ctx.fillText(threshold.grade, xPosition, chartArea.top - 8);
                             ctx.restore();
                         }
@@ -1670,7 +1669,7 @@
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
                             ctx.fillStyle = percentile.color;
-                            ctx.font = 'bold 10px Arial';
+                            ctx.font = 'bold 17px Arial';
                             ctx.fillText(text, xPosition, labelY);
                         }
                     });
@@ -1755,9 +1754,9 @@
                         },
                         subtitle: {
                             display: true,
-                            text: 'Click on grade thresholds (A,B,C,D) to see students above that threshold',
+                            text: '  ',
                             font: {
-                                size: 14,
+                                size: 16,
                                 style: 'italic'
                             },
                             padding: {
