@@ -290,6 +290,21 @@
             margin: 20px 0 10px 0;
             color: #1976d2;
         }
+        #grade-threshold-popup {
+            position: absolute;
+            display: none;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            min-width: 200px;
+            max-width: 400px;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -306,6 +321,19 @@
         </div>
         <div class="stats-section">
             <h2>Overall Grade Distribution</h2>
+            <div style="margin-bottom: 15px; padding: 10px; background-color: #f5f9ff; border-left: 4px solid #2196f3; border-radius: 4px;">
+                <p style="margin: 0 0 5px 0; color: #333;"><strong>Interactive Features:</strong></p>
+                <ul style="margin: 0; padding-left: 25px;">
+                    <li>Vertical colored lines show grade thresholds: 
+                        <span style="color:rgba(0,200,0,0.8);font-weight:bold;">A=90%</span>, 
+                        <span style="color:rgba(100,200,0,0.8);font-weight:bold;">B=80%</span>, 
+                        <span style="color:rgba(200,200,0,0.8);font-weight:bold;">C=70%</span>, 
+                        <span style="color:rgba(200,100,0,0.8);font-weight:bold;">D=60%</span>
+                    </li>
+                    <li>Click on any threshold line to see students who scored at or above that grade</li>
+                    <li>Dotted gray lines show class percentiles (25th, 50th, 75th)</li>
+                </ul>
+            </div>
             <div class="distribution-controls">
                 <label>Distribution Type:</label>
                 <select id="distributionType">
@@ -790,6 +818,8 @@
                     delivLabel.textContent = `Deliverable ${delivId}:`;
                     delivLabel.style.fontWeight = 'bold';
                     delivLabel.style.marginTop = '8px';
+                    delivLabel.style.fontSize = '1.1em';
+                    delivLabel.style.color = '#333';
                     criterionButtons.appendChild(delivLabel);
                     
                     const buttonContainer = document.createElement('div');
@@ -1123,7 +1153,6 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            max: 5.5,
                             title: {
                                 display: true,
                                 text: 'Score'
@@ -1200,9 +1229,9 @@
                         } else {
                             notChangedCount++;
                         }
-                            }
-                        }
-                    });
+                    }
+                }
+            });
             
             // Add to edit history
             window.editHistory.push(editState);
@@ -1342,7 +1371,7 @@
 
         // Modified updateGradeDistribution function that can handle different data sources
         window.updateGradeDistribution = function(type, specificStudentScores = null, specificMaxScore = null) {
-            const ctx = document.getElementById('gradeDistribution').getContext('2d');
+                const ctx = document.getElementById('gradeDistribution').getContext('2d');
             let labels, distributionData, originalDistributionData, chartType = 'bar', chartLabel = 'Number of Students';
 
             // Use provided scores or default to window values
@@ -1354,6 +1383,21 @@
             // Calculate grades as percentages
             const totalGrades = Object.values(studentScores);
             const percentages = totalGrades.map(grade => (grade / maxPossibleScore) * 100);
+            
+            // Calculate percentiles for the data
+            const sortedPercentages = [...percentages].sort((a, b) => a - b);
+            const percentile25 = sortedPercentages[Math.floor(sortedPercentages.length * 0.25)];
+            const percentile50 = sortedPercentages[Math.floor(sortedPercentages.length * 0.5)];
+            const percentile75 = sortedPercentages[Math.floor(sortedPercentages.length * 0.75)];
+            
+            // Store student names with their percentages for the threshold popup
+            const studentPercentages = Object.entries(studentScores).map(([name, score]) => ({
+                name,
+                percentage: (score / maxPossibleScore) * 100
+            })).sort((a, b) => b.percentage - a.percentage);
+            
+            // Store globally for threshold tooltip access
+            window.chartStudentData = studentPercentages;
             
             // Check if we have original data and if it's different from current data
             const hasOriginalData = originalStudentScores && 
@@ -1373,14 +1417,14 @@
                 chartLabel = 'Current Distribution';
 
                 // Create bins (e.g., 20 bins from 0 to 100)
-                const binCount = 20;
-                const binSize = 100 / binCount;
+                const binCount = 21;
+                const binSize = 5;
                 labels = [];
                 distributionData = new Array(binCount).fill(0);
                 originalDistributionData = new Array(binCount).fill(0);
 
                 for (let i = 0; i < binCount; i++) {
-                    labels.push(`${Math.round(i * binSize)}-${Math.round((i + 1) * binSize)}`);
+                    labels.push(`${Math.round(i * binSize)}`);
                 }
 
                 percentages.forEach(percentage => {
@@ -1412,17 +1456,17 @@
                     labelsArr = ranges.slice(0, -1).map((val, i) => `${val.toFixed(1)}-${ranges[i + 1].toFixed(1)}`);
                 }
                 labels = labelsArr;
-                distributionData = new Array(ranges.length - 1).fill(0);
+                    distributionData = new Array(ranges.length - 1).fill(0);
                 originalDistributionData = new Array(ranges.length - 1).fill(0);
-                
+                    
                 percentages.forEach(percentage => {
-                    for (let i = 0; i < ranges.length - 1; i++) {
-                        if (percentage >= ranges[i] && percentage <= ranges[i + 1]) {
-                            distributionData[i]++;
-                            break;
+                        for (let i = 0; i < ranges.length - 1; i++) {
+                            if (percentage >= ranges[i] && percentage <= ranges[i + 1]) {
+                                distributionData[i]++;
+                                break;
+                            }
                         }
-                    }
-                });
+                    });
                 
                 // Fill original data bins if available
                 if (hasOriginalData) {
@@ -1435,12 +1479,12 @@
                         }
                     });
                 }
-            }
+                }
 
-            // Update the chart
-            if (window.gradeChart) {
-                window.gradeChart.destroy();
-            }
+                // Update the chart
+                if (window.gradeChart) {
+                    window.gradeChart.destroy();
+                }
             
             // Prepare datasets array - always include current distribution
             const datasets = [{
@@ -1467,18 +1511,224 @@
                 });
             }
             
-            window.gradeChart = new Chart(ctx, {
+            // Define letter grade thresholds
+            const letterGradeThresholds = [
+                { grade: 'A', threshold: 90, color: 'rgba(0, 200, 0, 0.8)' },
+                { grade: 'B', threshold: 80, color: 'rgba(100, 200, 0, 0.8)' },
+                { grade: 'C', threshold: 70, color: 'rgba(200, 200, 0, 0.8)' },
+                { grade: 'D', threshold: 60, color: 'rgba(200, 100, 0, 0.8)' }
+            ];
+            
+            // Create plugin to draw grade threshold lines and percentile lines
+            const thresholdLinesPlugin = {
+                id: 'thresholdLines',
+                afterDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const yAxis = chart.scales.y;
+                    const xAxis = chart.scales.x;
+                    const chartArea = chart.chartArea;
+                    
+                    // Draw grade threshold lines
+                    letterGradeThresholds.forEach(threshold => {
+                        // Get position for threshold lines - handle both number and string scales
+                        let xPosition;
+                        if (chartType === 'curve') {
+                            // For curve (line) chart, find appropriate bin
+                            const bin = Math.floor(threshold.threshold / (100 / labels.length));
+                            xPosition = xAxis.getPixelForValue(bin);
+                        } else {
+                            // For other charts, find the correct range
+                            for (let i = 0; i < labels.length; i++) {
+                                const range = labels[i].split('-');
+                                if (range.length === 2) {
+                                    const lower = parseFloat(range[0]);
+                                    const upper = parseFloat(range[1]);
+                                    if (threshold.threshold >= lower && threshold.threshold <= upper) {
+                                        xPosition = xAxis.getPixelForValue(i);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // If we couldn't determine the position or it's out of chart area, calculate directly
+                        if (!xPosition || xPosition < chartArea.left || xPosition > chartArea.right) {
+                            // Calculate position based on percentage of chart width
+                            const dataRange = 100; // Percentage range 0-100%
+                            const pixelRange = chartArea.right - chartArea.left;
+                            const pixelsPerUnit = pixelRange / dataRange;
+                            xPosition = chartArea.left + (threshold.threshold * pixelsPerUnit);
+                        }
+                        
+                        // Only draw if the threshold is within chart area
+                        if (xPosition >= chartArea.left && xPosition <= chartArea.right) {
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.moveTo(xPosition, chartArea.top);
+                            ctx.lineTo(xPosition, chartArea.bottom);
+                            ctx.lineWidth = 3;
+                            ctx.strokeStyle = threshold.color;
+                            ctx.setLineDash([5, 3]);
+                            ctx.stroke();
+                            
+                            // Add label at the top with background for better visibility
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            
+                            // Draw background for text
+                            const textWidth = ctx.measureText(threshold.grade).width;
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                            ctx.fillRect(
+                                xPosition - textWidth/2 - 3, 
+                                chartArea.top - 25, 
+                                textWidth + 6, 
+                                20
+                            );
+                            
+                            // Draw grade label
+                            ctx.fillStyle = threshold.color;
+                            ctx.font = 'bold 16px Arial';
+                            ctx.fillText(threshold.grade, xPosition, chartArea.top - 8);
+                            ctx.restore();
+                        }
+                    });
+                    
+                    // Draw percentile lines
+                    const percentiles = [
+                        { label: '25th', value: percentile25, color: 'rgba(100, 100, 100, 0.8)' },
+                        { label: '50th', value: percentile50, color: 'rgba(50, 50, 50, 0.8)' },
+                        { label: '75th', value: percentile75, color: 'rgba(150, 150, 150, 0.8)' }
+                    ];
+                    
+                    percentiles.forEach(percentile => {
+                        // Calculate position in the same way as thresholds
+                        let xPosition;
+                        if (chartType === 'curve') {
+                            const bin = Math.floor(percentile.value / (100 / labels.length));
+                            xPosition = xAxis.getPixelForValue(bin);
+                        } else {
+                            // Fall back to percentage of chart width
+                            const dataRange = 100;
+                            const pixelRange = chartArea.right - chartArea.left;
+                            const pixelsPerUnit = pixelRange / dataRange;
+                            xPosition = chartArea.left + (percentile.value * pixelsPerUnit);
+                        }
+                        
+                        // Only draw if the percentile is within chart area
+                        if (xPosition >= chartArea.left && xPosition <= chartArea.right) {
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.moveTo(xPosition, chartArea.bottom);
+                            ctx.lineTo(xPosition, chartArea.top);
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = percentile.color;
+                            ctx.setLineDash([2, 2]);
+                            ctx.stroke();
+                            
+                            // Set up the percentile text
+                            const percentileValue = Math.round(percentile.value);
+                            const text = `${percentileValue}`;
+                            const indicator = percentile.label.split('th')[0];
+                            
+                            // Create shorter labels to save space
+                            const textWidth = ctx.measureText(text).width;
+                            
+                            // Position labels inside the chart at different heights to avoid overlap
+                            let labelY;
+                            if (percentile.label === '25th') {
+                                labelY = chartArea.top + 30; // Position 25th at top
+                            } else if (percentile.label === '75th') {
+                                labelY = chartArea.top + 70; // Position 75th higher up
+                            } else {
+                                labelY = chartArea.top + 50; // Position 50th in the middle
+                            }
+                            
+                            // Create rounded background for the label
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                            // Rounded rectangle for background
+                            const radius = 8;
+                            const x = xPosition - textWidth/2 - 6;
+                            const y = labelY - 8;
+                            const width = textWidth + 12;
+                            const height = 16;
+                            
+                            // Draw rounded rectangle
+                            ctx.beginPath();
+                            ctx.moveTo(x + radius, y);
+                            ctx.lineTo(x + width - radius, y);
+                            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                            ctx.lineTo(x + width, y + height - radius);
+                            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                            ctx.lineTo(x + radius, y + height);
+                            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                            ctx.lineTo(x, y + radius);
+                            ctx.quadraticCurveTo(x, y, x + radius, y);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            // Add short label inside the chart
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillStyle = percentile.color;
+                            ctx.font = 'bold 10px Arial';
+                            ctx.fillText(text, xPosition, labelY);
+                        }
+                    });
+                }
+            };
+            
+            // Create setup for click/hover interactions
+            const getGradeDetails = (e, chart) => {
+                if (!chart.canvas || !window.chartStudentData) return;
+                
+                const points = chart.getElementsAtEventForMode(e, 'nearest', {intersect: false}, true);
+                if (points.length === 0) {
+                    // Check if we're near a threshold line instead
+                    const rect = chart.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const chartArea = chart.chartArea;
+                    const xAxis = chart.scales.x;
+                    
+                    let nearestThreshold = null;
+                    let minDistance = Infinity;
+                    
+                    // Find the nearest threshold line
+                    letterGradeThresholds.forEach(threshold => {
+                        const thresholdX = xAxis.getPixelForValue(threshold.threshold);
+                        const distance = Math.abs(x - thresholdX);
+                        
+                        // Only consider thresholds within 10 pixels and in chart area
+                        if (distance < 10 && distance < minDistance && 
+                            thresholdX >= chartArea.left && thresholdX <= chartArea.right) {
+                            minDistance = distance;
+                            nearestThreshold = threshold;
+                        }
+                    });
+                    
+                    // If near a threshold, show students above it
+                    if (nearestThreshold) {
+                        const thresholdValue = nearestThreshold.threshold;
+                        const studentsAbove = window.chartStudentData.filter(s => s.percentage >= thresholdValue);
+                        
+                        if (studentsAbove.length > 0) {
+                            showStudentPopup(e, nearestThreshold.grade, thresholdValue, studentsAbove);
+                        }
+                    }
+                }
+            };
+            
+                window.gradeChart = new Chart(ctx, {
                 type: chartType,
-                data: {
-                    labels: labels,
+                    data: {
+                        labels: labels,
                     datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
                             title: {
                                 display: true,
                                 text: 'Number of Students'
@@ -1488,22 +1738,166 @@
                             title: {
                                 display: true,
                                 text: 'Percentage'
+                                }
                             }
-                        }
-                    },
-                    plugins: {
-                        title: {
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                            text: type === 'curve' ? 'Grade Distribution (Curve)' : 'Grade Distribution',
+                            font: {
+                                size: 18
+                            },
+                            padding: {
+                                top: 20,
+                                bottom: 10
+                            }
+                        },
+                        subtitle: {
                             display: true,
-                            text: type === 'curve' ? 'Grade Distribution (Curve)' : 'Grade Distribution'
+                            text: 'Click on grade thresholds (A,B,C,D) to see students above that threshold',
+                            font: {
+                                size: 14,
+                                style: 'italic'
+                            },
+                            padding: {
+                                bottom: 10
+                            }
                         },
                         legend: {
                             display: hasOriginalData, // only show legend if we have two datasets
                             position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return `Range: ${tooltipItems[0].label}%`;
+                                },
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw} students`;
+                                }
+                            }
                         }
+                    },
+                    onClick: function(e) {
+                        getGradeDetails(e, this);
+                    },
+                    onHover: function(e) {
+                        const isOverThreshold = isNearThreshold(e, this);
+                        document.body.style.cursor = isOverThreshold ? 'pointer' : 'default';
+                    }
+                },
+                plugins: [thresholdLinesPlugin]
+            });
+            
+            // Check if mouse is near a threshold line
+            function isNearThreshold(e, chart) {
+                if (!chart.canvas) return false;
+                
+                const rect = chart.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const chartArea = chart.chartArea;
+                const xAxis = chart.scales.x;
+                
+                // Check if near any threshold
+                for (const threshold of letterGradeThresholds) {
+                    const thresholdX = xAxis.getPixelForValue(threshold.threshold);
+                    const distance = Math.abs(x - thresholdX);
+                    
+                    // If within 10 pixels of a threshold line, return true
+                    if (distance < 10 && thresholdX >= chartArea.left && thresholdX <= chartArea.right) {
+                        return true;
                     }
                 }
-            });
+                return false;
+            }
+            
+            // Create a popup element if it doesn't exist
+            if (!document.getElementById('grade-threshold-popup')) {
+                const popup = document.createElement('div');
+                popup.id = 'grade-threshold-popup';
+                popup.style.cssText = `
+                    position: absolute;
+                    display: none;
+                    background: white;
+                    border: 1px solid #ccc;
+                    border-radius: 5px;
+                    padding: 10px;
+                    min-width: 200px;
+                    max-width: 400px;
+                    max-height: 400px;
+                    overflow-y: auto;
+                    box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    font-size: 14px;
+                `;
+                document.body.appendChild(popup);
+                
+                // Close popup when clicking elsewhere
+                document.addEventListener('click', function(e) {
+                    const popup = document.getElementById('grade-threshold-popup');
+                    if (popup && popup.style.display === 'block') {
+                        // If click is outside popup and not on chart
+                        if (!popup.contains(e.target) && 
+                            e.target.id !== 'gradeDistribution' && 
+                            !e.target.closest('#gradeDistribution')) {
+                            popup.style.display = 'none';
+                        }
+                    }
+                });
+            }
         };
+        
+        // Function to show student popup
+        function showStudentPopup(event, grade, threshold, students) {
+            const popup = document.getElementById('grade-threshold-popup');
+            if (!popup) return;
+            
+            // Position the popup near the cursor
+            const x = event.clientX;
+            const y = event.clientY;
+            
+            // Calculate better position to avoid going off-screen
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const popupWidth = 300; // Estimated width
+            
+            let left = x + 10;
+            if (left + popupWidth > viewportWidth) {
+                left = x - popupWidth - 10;
+            }
+            
+            popup.style.left = `${left}px`;
+            popup.style.top = `${y + 10}px`;
+            
+            // Get appropriate color for the grade
+            let gradeColor = 'rgba(0, 200, 0, 0.8)'; // Default A grade color
+            switch(grade) {
+                case 'A': gradeColor = 'rgba(0, 200, 0, 0.8)'; break;
+                case 'B': gradeColor = 'rgba(100, 200, 0, 0.8)'; break;
+                case 'C': gradeColor = 'rgba(200, 200, 0, 0.8)'; break;
+                case 'D': gradeColor = 'rgba(200, 100, 0, 0.8)'; break;
+            }
+            
+            // Format the popup content
+            const title = `<h3 style="margin: 0 0 10px 0; color: ${gradeColor}; padding-bottom: 8px; border-bottom: 2px solid ${gradeColor};">
+                Students with ${grade} Grade (≥${threshold}%)</h3>`;
+            
+            let contentHTML = '';
+            if (students.length > 0) {
+                contentHTML += `<p style="margin: 5px 0; font-weight: bold;">${students.length} students in this range:</p>`;
+                contentHTML += '<ul style="margin: 0; padding: 0 0 0 20px;">';
+                students.forEach((student, idx) => {
+                    contentHTML += `<li>${student.name}: <strong>${student.percentage.toFixed(1)}%</strong></li>`;
+                });
+                contentHTML += '</ul>';
+            } else {
+                contentHTML = '<p>No students in this range.</p>';
+            }
+            
+            popup.innerHTML = title + contentHTML;
+            popup.style.display = 'block';
+        }
 
         function addBonusToAll() {
             const bonusPoints = parseInt(document.getElementById('bonusPoints').value);

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart-container { height: 400px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Test Chart with Single Value Labels</h1>
+    <div class="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            
+            // Data with single value labels
+            const data = {
+                labels: ['5', '15', '25', '35', '45', '55', '65', '75', '85', '95'],
+                datasets: [{
+                    label: 'Test Distribution',
+                    data: [1, 2, 3, 5, 8, 6, 4, 3, 2, 1],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: false
+                }]
+            };
+            
+            // Chart with vertical lines at specific values
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Percentage'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Chart with Vertical Lines at Specific Percentages'
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'customLines',
+                    afterDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        const xAxis = chart.scales.x;
+                        
+                        // Draw lines at specific percentage values
+                        const thresholds = [
+                            { value: 60, color: 'rgba(255, 0, 0, 0.7)' },
+                            { value: 70, color: 'rgba(255, 165, 0, 0.7)' },
+                            { value: 80, color: 'rgba(0, 128, 0, 0.7)' },
+                            { value: 90, color: 'rgba(0, 0, 255, 0.7)' }
+                        ];
+                        
+                        thresholds.forEach(threshold => {
+                            // Find closest label to this threshold value
+                            let closestLabelIndex = 0;
+                            let minDiff = Infinity;
+                            
+                            for (let i = 0; i < chart.data.labels.length; i++) {
+                                const labelValue = parseFloat(chart.data.labels[i]);
+                                const diff = Math.abs(labelValue - threshold.value);
+                                
+                                if (diff < minDiff) {
+                                    minDiff = diff;
+                                    closestLabelIndex = i;
+                                }
+                            }
+                            
+                            // Get pixel position for this index
+                            const xPosition = xAxis.getPixelForValue(closestLabelIndex);
+                            
+                            // Draw vertical line
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.moveTo(xPosition, chartArea.top);
+                            ctx.lineTo(xPosition, chartArea.bottom);
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = threshold.color;
+                            ctx.setLineDash([5, 3]);
+                            ctx.stroke();
+                            
+                            // Add label at the top
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillStyle = threshold.color;
+                            ctx.font = 'bold 14px Arial';
+                            ctx.fillText(`${threshold.value}%`, xPosition, chartArea.top - 5);
+                            
+                            ctx.restore();
+                        });
+                    }
+                }]
+            });
+        });
+    </script>
+</body>
+</html> 
