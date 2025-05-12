@@ -473,11 +473,16 @@
                 const deliverableId = row['Deliverable'];
                 const criterionId = row['Criterion'];
                 const score = parseFloat(row['Score']);
-
+                // 判断学生名字
+                let studentDisplayName = row['File'];
+                if (row['Name'] && row['PID']) {
+                    studentDisplayName = row['Name'];
+                }
                 // Find or create student
                 if (!studentMap[studentId]) {
                     studentMap[studentId] = {
                         id: studentId,
+                        name: studentDisplayName, // 用于显示
                         deliverables: [],
                         finalScore: 0,
                         status: 'original'
@@ -485,7 +490,6 @@
                     window.students.push(studentMap[studentId]);
                 }
                 const student = studentMap[studentId];
-
                 // Find or create deliverable
                 let deliver = student.deliverables.find(d => d.id === deliverableId);
                 if (!deliver) {
@@ -497,7 +501,6 @@
                     };
                     student.deliverables.push(deliver);
                 }
-
                 // Add criterion
                 deliver.criteria.push({
                     id: criterionId,
@@ -521,7 +524,7 @@
             processedData.forEach(row => {
                 const criterion = row['Criterion'];
                 const score = parseFloat(row['Score']);
-                const fileName = row['File'];
+                const fileName = (row['Name'] && row['PID']) ? row['Name'] : row['File'];
                 const studentName = fileName.split('_')[0];
 
                 // Process criterion scores
@@ -882,9 +885,7 @@
             
             // Add student rows with rankings
             sortedStudents.forEach((student, index) => {
-                // Just display student name (first part of filename)
-                const studentName = student.id.split('_')[0]; 
-                html += `<tr><td style="font-weight:bold; text-align:left;">${studentName}</td>`;
+                html += `<tr><td style="font-weight:bold; text-align:left;">${student.name}</td>`;
                 sortedCriteriaIds.forEach((critId, i) => {
                     const val = studentCriterionScores[student.id][critId];
                     const delivId = sortedDeliverables[i];
@@ -1010,11 +1011,8 @@
             // Recalculate student rankings based on updated scores
             const studentScores = {};
             let maxPossibleScore = 0;
-            
             window.students.forEach(student => {
-                const studentName = student.id.split('_')[0];
-                studentScores[studentName] = student.finalScore;
-                
+                studentScores[student.name] = student.finalScore;
                 // Calculate max possible score based on the first student's criteria
                 if (maxPossibleScore === 0) {
                     maxPossibleScore = student.deliverables.reduce((sum, d) => {
@@ -1635,11 +1633,11 @@
                             // Position labels inside the chart at different heights to avoid overlap
                             let labelY;
                             if (percentile.label === '25th') {
-                                labelY = chartArea.top + 30; // Position 25th at top
+                                labelY = chartArea.top + 30; // Position 25th at the top area of chart
                             } else if (percentile.label === '75th') {
-                                labelY = chartArea.top + 70; // Position 75th higher up
+                                labelY = chartArea.top + 70; // Position 75th further down
                             } else {
-                                labelY = chartArea.top + 50; // Position 50th in the middle
+                                labelY = chartArea.top + 50; // Position 50th in between
                             }
                             
                             // Create rounded background for the label
