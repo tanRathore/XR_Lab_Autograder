@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Processor Dashboard</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0;
+            padding: 30px; 
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #2979ff; 
+            margin-top: 0;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            font-weight: 500;
+        }
+        h2 { 
+            color: #1565c0; 
+            margin-top: 30px;
+            font-weight: 500;
+            font-size: 1.4rem;
+        }
+        h3 {
+            color: #0d47a1;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        .card {
+            background: #fff;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .file-input-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        .file-input { 
+            margin-bottom: 10px;
+            border: 2px dashed #bbdefb;
+            padding: 20px;
+            border-radius: 8px;
+            background: #e3f2fd;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .file-input:hover {
+            border-color: #2979ff;
+            background: #bbdefb;
+        }
+        .file-input input[type="file"] {
+            display: none;
+        }
+        .file-input label {
+            display: block;
+            cursor: pointer;
+            padding: 10px;
+            font-weight: 500;
+            color: #1565c0;
+        }
+        .file-input span {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #546e7a;
+        }
+        .selected-files {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #546e7a;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 8px;
+            margin: 20px 0 10px 0;
+            height: 12px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            background: #2196f3;
+            color: #fff;
+            text-align: center;
+            line-height: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            transition: width 0.3s;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        button:disabled {
+            background: #bbdefb;
+            cursor: not-allowed;
+        }
+        table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            background: #fff; 
+            margin-top: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th, td { 
+            border: 1px solid #e0e0e0; 
+            padding: 12px 15px;
+            text-align: left;
+        }
+        th { 
+            background: #e3f2fd; 
+            color: #1565c0;
+            font-weight: 500;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr.reduced { background: #e8f5e9; }
+        tr.failed { background: #ffebee; }
+        .summary {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            border-left: 4px solid #2196f3;
+        }
+        .summary p {
+            margin: 5px 0;
+        }
+        .download-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 8px;
+        }
+        .download-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+        .download-button:hover {
+            background-color: #388E3C;
+        }
+        .image-btn {
+            background-color: #673AB7;
+        }
+        .image-btn:hover {
+            background-color: #512DA8;
+        }
+        .zip-button {
+            background-color: #FF9800;
+        }
+        .zip-button:hover {
+            background-color: #F57C00;
+        }
+        .hidden {
+            display: none;
+        }
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .alert-error {
+            background-color: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+        .alert-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+        .image-preview-table {
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 768px) {
+            body { padding: 15px; }
+            .button-group { flex-direction: column; }
+            table { font-size: 0.85rem; }
+            th, td { padding: 8px; }
+        }
+        .success-message {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s ease-in-out, pulse 2s infinite alternate;
+        }
+        .success-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .file-status {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: inline-block;
+            font-weight: 500;
+        }
+        .file-ready {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+        .file-waiting {
+            background-color: #fff8e1;
+            color: #f57f17;
+            border-left: 4px solid #ffc107;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 1s infinite ease-in-out;
+        }
+        /* Error display styling */
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            display: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #f44336;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .error-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        /* Processing status indicator */
+        .status-indicator {
+            font-weight: bold;
+            background-color: #e3f2fd;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: inline-block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .processing {
+            color: #1565c0;
+        }
+        .complete {
+            color: #2e7d32;
+            background-color: #e8f5e9;
+        }
+        .error {
+            color: #c62828;
+            background-color: #ffebee;
+        }
+        /* Current file info display */
+        #currentFileInfo {
+            font-size: 1.1rem;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            border-radius: 4px;
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+            font-weight: 500;
+        }
+        
+        .progress-text {
+            font-size: 1.1rem;
+            margin-top: 8px;
+            font-weight: 500;
+            color: #1565c0;
+        }
+        
+        /* Estimate text styling */
+        .estimate-text {
+            font-size: 1.1rem;
+            margin-top: 8px;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #1565c0;
+            padding: 10px 15px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .file-details {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        /* Progress container styling */
+        .progress-container {
+            margin: 25px 0;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Pulsing effect for active progress */
+        .pulse-text {
+            animation: pulse-text 2s infinite;
+        }
+        
+        @keyframes pulse-text {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        /* Completion notification styling */
+        .completion-banner {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            animation: slideDown 0.5s ease-out forwards, glow 2s infinite;
+            text-align: center;
+        }
+        
+        @keyframes slideDown {
+            from { top: -50px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+        
+        @keyframes glow {
+            0% { box-shadow: 0 0 10px rgba(76, 175, 80, 0.7); }
+            50% { box-shadow: 0 0 25px rgba(76, 175, 80, 0.9); }
+            100% { box-shadow: 0 0 10px rgba(76, 175, 80, 0.7); }
+        }
+        
+        .view-results-btn {
+            background-color: white;
+            color: #4CAF50;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .view-results-btn:hover {
+            background-color: #f1f1f1;
+        }
+        
+        /* Summary Results styling */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .summary-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .summary-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #1565c0;
+        }
+        
+        .processing-time {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            font-style: italic;
+            color: #555;
+        }
+        
+        /* File details table styling */
+        .details-section {
+            margin-top: 30px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .file-details-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .file-details-table th {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 500;
+        }
+        
+        .file-details-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-details-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .file-details-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .file-details-table tr.reduced {
+            background-color: #e8f5e9;
+        }
+        
+        .file-details-table tr.failed {
+            background-color: #ffebee;
+        }
+        
+        .file-details-table tr.high-res {
+            background-color: #e1f5fe;
+        }
+        
+        .note {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #775700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF Processor Dashboard</h1>
+        
+        <!-- Completion Banner - initially hidden -->
+        <div class="completion-banner" id="completionBanner">
+            Processing Complete! 
+            <div>Your files have been processed successfully.</div>
+            <button class="view-results-btn" id="viewResultsBtn">View Results</button>
+        </div>
+        
+        <!-- Success message - initially hidden -->
+        <div class="success-message" id="successMessage">
+            <div class="success-icon">✓</div>
+            <div>Processing complete!</div>
+            <div>Your files have been processed successfully.</div>
+            <div class="file-status file-ready" id="metadataStatus">
+                Image metadata CSV is ready for download
+            </div>
+        </div>
+        
+        <!-- Error message - initially hidden -->
+        <div class="error-message" id="errorMessage">
+            <div class="error-icon">⚠</div>
+            <div>Processing Error</div>
+            <div id="errorDetails">An error occurred during processing.</div>
+        </div>
+        
+        <div class="card">
+            <h2>Upload Files</h2>
+            <div class="file-input-container">
+                <div class="file-input">
+                    <label for="fileInput">
+                        <i class="fa fa-cloud-upload"></i> Choose Files
+                    </label>
+                    <input type="file" id="fileInput" multiple accept=".pdf">
+                    <span>Select PDF files to reduce and extract images</span>
+                </div>
+                <div class="selected-files" id="selectedFiles"></div>
+            </div>
+            
+            <div class="progress-container">
+                <div id="estimateContainer" style="display:none;">
+                    <div class="estimate-text" id="estimateText">Estimated processing time: calculating...</div>
+                    <div class="file-details" id="fileDetailsText"></div>
+                </div>
+                <div id="processingContainer" style="display:none;">
+                    <div class="progress-text" id="progressText">Processing files...</div>
+                    <div id="currentFileInfo" style="display:none;"></div>
+                    <div class="status-indicator processing" id="statusIndicator">Processing in background...</div>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" id="processBtn">Process Files</button>
+                <button type="button" id="showResultBtn">Show Latest Results</button>
+            </div>
+        </div>
+        
+        <div class="download-section hidden" id="downloadSection">
+            <h2>Download Results</h2>
+            <a href="/download/image_metadata.csv" class="download-button image-btn" id="imageBtn">Download Image Metadata CSV</a>
+            <a href="/download/reduced_pdfs.zip" class="download-button zip-button" id="zipBtn">Download All Reduced PDFs (ZIP)</a>
+        </div>
+        
+        <div id="summary"></div>
+        <div id="resultTable"></div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const selectedFiles = document.getElementById('selectedFiles');
+            const processBtn = document.getElementById('processBtn');
+            const showResultBtn = document.getElementById('showResultBtn');
+            const estimateContainer = document.getElementById('estimateContainer');
+            const processingContainer = document.getElementById('processingContainer');
+            const estimateText = document.getElementById('estimateText');
+            const fileDetailsText = document.getElementById('fileDetailsText');
+            const progressText = document.getElementById('progressText');
+            const currentFileInfo = document.getElementById('currentFileInfo');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorDetails = document.getElementById('errorDetails');
+            const downloadSection = document.getElementById('downloadSection');
+            const completionBanner = document.getElementById('completionBanner');
+            const viewResultsBtn = document.getElementById('viewResultsBtn');
+            
+            let files = [];
+            let checkStatusInterval = null;
+            
+            // Get base URL dynamically
+            const getBaseUrl = () => {
+                const currentUrl = window.location.href;
+                // If running on development server (port 5500), use the Flask server URL
+                if (currentUrl.includes(':5500') || 
+                    (currentUrl.includes('localhost') && !currentUrl.includes(':5001')) ||
+                    (currentUrl.includes('127.0.0.1') && !currentUrl.includes(':5001'))) {
+                    console.log("Using Flask server at port 5001");
+                    return 'http://127.0.0.1:5001';
+                }
+                // If running on the same host, use relative path
+                console.log("Using relative paths for API calls");
+                return '';
+            };
+            
+            // Helper function for making API calls with the proper base URL
+            function apiCall(endpoint) {
+                const baseUrl = getBaseUrl();
+                const url = `${baseUrl}${endpoint}`;
+                console.log(`API call to: ${url}`);
+                return url;
+            }
+
+            // Calculate estimated processing time based on file size
+            function calculateEstimatedTime(fileSize) {
+                // Simple estimation: ~15 seconds per MB with a minimum of 10 seconds
+                const sizeInMB = fileSize / (1024 * 1024);
+                const estimatedSeconds = Math.max(3, Math.round(sizeInMB * 0.5));
+                
+                if (estimatedSeconds < 60) {
+                    return `about ${estimatedSeconds} seconds`;
+                } else {
+                    const minutes = Math.floor(estimatedSeconds / 60);
+                    const seconds = estimatedSeconds % 60;
+                    return `about ${minutes} minute${minutes > 1 ? 's' : ''} ${seconds > 0 ? `and ${seconds} seconds` : ''}`;
+                }
+            }
+
+            // File input change event
+            fileInput.addEventListener('change', function(e) {
+                files = Array.from(e.target.files);
+                
+                // Update file list display
+                if (files.length === 0) {
+                    selectedFiles.textContent = 'No files selected';
+                    estimateContainer.style.display = 'none';
+                    return;
+                }
+                
+                // Calculate total file size and create detail list
+                let totalSize = 0;
+                let fileDetails = '';
+                
+                files.forEach((file, index) => {
+                    totalSize += file.size;
+                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    fileDetails += `${file.name} (${fileSizeMB} MB)<br>`;
+                });
+                
+                // Display the list of selected files
+                selectedFiles.innerHTML = `<strong>${files.length} file(s) selected:</strong><br>`;
+                selectedFiles.innerHTML += fileDetails;
+                
+                // Calculate and display estimated processing time
+                const estimatedTime = calculateEstimatedTime(totalSize);
+                estimateText.innerHTML = `<strong>Estimated processing time:</strong> ${estimatedTime}`;
+                fileDetailsText.innerHTML = fileDetails;
+                estimateContainer.style.display = 'block';
+                
+                // Enable process button
+                processBtn.disabled = false;
+            });
+
+            // Process button click event
+            processBtn.addEventListener('click', function() {
+                if (files.length === 0) {
+                    alert('Please select files first');
+                    return;
+                }
+                
+                // Disable the button to prevent multiple clicks
+                this.disabled = true;
+                
+                // Hide estimate container and show processing container
+                estimateContainer.style.display = 'none';
+                processingContainer.style.display = 'block';
+                progressText.textContent = 'Starting process...';
+                progressText.classList.add('pulse-text');
+                statusIndicator.style.display = 'inline-block';
+                
+                // Hide any previous error or success messages
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                completionBanner.style.display = 'none';
+                
+                const formData = new FormData();
+                files.forEach(file => {
+                    formData.append('files', file);
+                });
+                
+                // First test upload to see if files are valid
+                fetch(apiCall('/test_upload'), {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // If test is successful, start the actual upload
+                        uploadFiles(formData);
+                    } else {
+                        progressText.textContent = 'Error: ' + data.message;
+                        progressText.classList.remove('pulse-text');
+                        statusIndicator.className = 'status-indicator error';
+                        statusIndicator.textContent = 'Error';
+                        this.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    progressText.textContent = 'Error occurred during upload test';
+                    progressText.classList.remove('pulse-text');
+                    statusIndicator.className = 'status-indicator error';
+                    statusIndicator.textContent = 'Error';
+                    this.disabled = false;
+                    
+                    // Show detailed error message
+                    errorDetails.textContent = error.toString();
+                    errorMessage.style.display = 'block';
+                });
+            });
+            
+            // Function to upload files and start processing
+            function uploadFiles(formData) {
+                fetch(apiCall('/upload'), {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        progressText.textContent = 'Processing files in background...';
+                        progressText.classList.add('pulse-text');
+                        
+                        // Start checking status
+                        if (checkStatusInterval) {
+                            clearInterval(checkStatusInterval);
+                        }
+                        checkStatusInterval = setInterval(checkMetadataStatus, 500);
+                    } else {
+                        progressText.textContent = 'Error: ' + data.message;
+                        statusIndicator.className = 'status-indicator error';
+                        statusIndicator.textContent = 'Error';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    progressText.textContent = 'Error occurred during upload';
+                    statusIndicator.className = 'status-indicator error';
+                    statusIndicator.textContent = 'Error';
+                });
+            }
+
+            // Function to check processing status
+            function checkMetadataStatus() {
+                fetch(apiCall('/check_metadata_status'))
+                .then(response => response.json())
+                .then(data => {
+                    // If we have a status message, display it
+                    if (data.status) {
+                        const statusText = data.status;
+                        
+                        // Show current file if available
+                        if (data.current_file) {
+                            currentFileInfo.textContent = "Current file: " + data.current_file;
+                            currentFileInfo.style.display = 'block';
+                        }
+                        
+                        progressText.textContent = statusText;
+                        
+                        // Check if process is complete
+                        if (data.progress >= 100 || statusText.includes('complete') || statusText.includes('100%')) {
+                            // Clear the interval to stop polling
+                            if (checkStatusInterval) {
+                                clearInterval(checkStatusInterval);
+                                checkStatusInterval = null;
+                            }
+                            
+                            progressText.classList.remove('pulse-text');
+                            progressText.textContent = 'Processing complete!';
+                            statusIndicator.className = 'status-indicator complete';
+                            statusIndicator.textContent = 'Complete';
+                            
+                            // Display success message
+                            successMessage.style.display = 'block';
+                            
+                            // Show completion banner
+                            completionBanner.style.display = 'block';
+                            
+                            // Automatically fetch results when complete
+                            fetchResults();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking status:', error);
+                });
+            }
+
+            // Show completion banner
+            function showCompletionBanner() {
+                const completionBanner = document.getElementById('completionBanner');
+                completionBanner.style.display = 'block';
+                
+                // Auto-hide after 10 seconds
+                setTimeout(() => {
+                    completionBanner.style.display = 'none';
+                }, 10000);
+            }
+
+            // Add event listener for View Results button
+            document.getElementById('viewResultsBtn').addEventListener('click', function() {
+                // Hide the banner
+                document.getElementById('completionBanner').style.display = 'none';
+                
+                // Scroll to results
+                const summary = document.getElementById('summary');
+                if (summary) {
+                    summary.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+
+            // Function to fetch and display results
+            function fetchResults() {
+                fetch(apiCall('/latest_results'))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Show download section
+                        downloadSection.classList.remove('hidden');
+                        
+                        // Create summary
+                        const summary = document.getElementById('summary');
+                        
+                        if (data.original_size && data.compressed_size) {
+                            const originalSize = (data.original_size / (1024 * 1024)).toFixed(2);
+                            const compressedSize = (data.compressed_size / (1024 * 1024)).toFixed(2);
+                            const reductionPercent = ((1 - (data.compressed_size / data.original_size)) * 100).toFixed(2);
+                            
+                            summary.innerHTML = `
+                                <div class="summary">
+                                    <h2>Processing Results</h2>
+                                    <div class="summary-grid">
+                                        <div class="summary-section">
+                                            <h3>Size Statistics</h3>
+                                            <p><strong>Original Size:</strong> ${originalSize} MB</p>
+                                            <p><strong>Compressed Size:</strong> ${compressedSize} MB</p>
+                                            <p><strong>Size Reduction:</strong> ${reductionPercent}%</p>
+                                            <p><strong>Space Saved:</strong> ${(originalSize - compressedSize).toFixed(2)} MB</p>
+                                        </div>
+                                        
+                                        <div class="summary-section">
+                                            <h3>File Processing</h3>
+                                            <p><strong>Total Files:</strong> ${data.total_files || data.size_results?.length || 'N/A'}</p>
+                                            <p><strong>Successfully Reduced:</strong> ${data.reduced_count || 'N/A'}</p>
+                                            <p><strong>Failed Processing:</strong> ${data.failed_count || 'N/A'}</p>
+                                        </div>
+                                        
+                                        <div class="summary-section">
+                                            <h3>Image Extraction</h3>
+                                            <p><strong>Total Images Extracted:</strong> ${data.image_count || 'N/A'}</p>
+                                            <p><strong>High Resolution Images:</strong> ${data.image_extraction?.high_res_images || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="processing-time">
+                                        <p><strong>Processing Completed:</strong> ${data.timestamp || new Date().toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // Generate file details table if size_results is available
+                            if (data.size_results && data.size_results.length > 0) {
+                                const fileDetailsHtml = `
+                                    <div class="details-section">
+                                        <h2>File Processing Details</h2>
+                                        <div class="table-responsive">
+                                            <table class="file-details-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>File Name</th>
+                                                        <th>Original Size (KB)</th>
+                                                        <th>Reduced Size (KB)</th>
+                                                        <th>Reduction</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${data.size_results.map(file => `
+                                                        <tr class="${file.status === 'Reduced' ? 'reduced' : file.status === 'Failed' ? 'failed' : ''}">
+                                                            <td>${file.file_name}</td>
+                                                            <td>${file.original_size_kb}</td>
+                                                            <td>${file.reduced_size_kb}</td>
+                                                            <td>${file.reduction_percent}%</td>
+                                                            <td>${file.status}</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                `;
+                                summary.innerHTML += fileDetailsHtml;
+                            }
+                            
+                            // Display image metadata information if available
+                            if (data.image_metadata && data.image_metadata.length > 0) {
+                                const imageMetadataHtml = `
+                                    <div class="details-section">
+                                        <h2>Extracted Images</h2>
+                                        <p>Below is a sample of the extracted images. Download the CSV for complete details.</p>
+                                        <div class="table-responsive">
+                                            <table class="file-details-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>PDF File</th>
+                                                        <th>Page</th>
+                                                        <th>Image Name</th>
+                                                        <th>Resolution</th>
+                                                        <th>High Resolution</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${data.image_metadata.map(img => `
+                                                        <tr class="${img.is_high_res ? 'high-res' : ''}">
+                                                            <td>${img.pdf_file}</td>
+                                                            <td>${img.page}</td>
+                                                            <td>${img.image_name}</td>
+                                                            <td>${img.resolution}</td>
+                                                            <td>${img.is_high_res ? 'Yes' : 'No'}</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="note">
+                                            <p>Note: Only showing the first ${data.image_metadata.length} images. Download the CSV for full data.</p>
+                                        </div>
+                                    </div>
+                                `;
+                                summary.innerHTML += imageMetadataHtml;
+                            }
+                        }
+                        
+                        // Update download links
+                        if (data.pdf_path) {
+                            document.getElementById('zipBtn').href = apiCall(data.pdf_path);
+                        }
+                        if (data.csv_path) {
+                            document.getElementById('imageBtn').href = apiCall(data.csv_path);
+                        }
+                        
+                        // Scroll to results
+                        summary.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        console.error('Error fetching results:', data.message);
+                        errorDetails.textContent = data.message || 'Failed to fetch results';
+                        errorMessage.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching results:', error);
+                    errorDetails.textContent = 'Network error while fetching results';
+                    errorMessage.style.display = 'block';
+                });
+            }
+            
+            // Show results button click event
+            showResultBtn.addEventListener('click', function() {
+                fetchResults();
+            });
+            
+            document.getElementById('imageBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = apiCall('/download/image_metadata.csv');
+            });
+            
+            document.getElementById('zipBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = apiCall('/download/reduced_pdfs.zip');
+            });
+        });
+    </script>
+</body>
+</html>
