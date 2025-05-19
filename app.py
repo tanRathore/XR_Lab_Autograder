@@ -407,9 +407,28 @@ def process_files_background(saved_files):
         processing_status["error"] = error_msg
         reset_processing_status()  # Reset processing status on error
 
+def clear_processing_folders():
+    print("Clearing processing folders...")
+    folders_to_clear = [EXTRACTED_IMAGES_FOLDER, RESULTS_FOLDER, REDUCED_FOLDER, UPLOAD_FOLDER]
+    for folder in folders_to_clear:
+        if os.path.exists(folder):
+            for filename in os.listdir(folder):
+                file_path = os.path.join(folder, filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    print(f'Failed to delete {file_path}. Reason: {e}')
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/stats')
+def stats():
+    return render_template('stats_result.html')
 
 @app.route('/api/progress')
 def get_progress():
@@ -418,6 +437,7 @@ def get_progress():
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
+    clear_processing_folders()
     try:
         print("Received upload request")
         

@@ -305,9 +305,53 @@
             z-index: 1000;
             font-size: 14px;
         }
+        .nav-link.active {
+          background: #1565c0;
+        }
+        .custom-navbar {
+          background: #1976d2;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+          margin-bottom: 30px;
+          border-radius: 8px;
+          font-family: inherit;
+        }
+        .custom-navbar-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: flex;
+          gap: 30px;
+          padding: 0 20px;
+        }
+        .custom-navbar-link {
+          color: #fff;
+          text-decoration: none;
+          font-size: 1.15em;
+          font-weight: 500;
+          padding: 10px 22px;
+          border-radius: 6px;
+          transition: background 0.18s, color 0.18s;
+          margin: 6px 0;
+          display: inline-block;
+        }
+        .custom-navbar-link:hover {
+          background: #1565c0;
+          color: #e3f2fd;
+        }
+        .custom-navbar-link.active {
+          background: #fff;
+          color: #1976d2;
+          font-weight: bold;
+          box-shadow: 0 2px 8px rgba(25,118,210,0.08);
+        }
     </style>
 </head>
 <body>
+    <nav class="custom-navbar">
+        <div class="custom-navbar-container">
+          <a href="{{ url_for('index') }}" class="custom-navbar-link {% if request.path == '/' %}active{% endif %}">File Size Reducer</a>
+          <a href="{{ url_for('stats') }}" class="custom-navbar-link {% if request.path == '/stats' %}active{% endif %}">Grade Statistics</a>
+        </div>
+      </nav>
     <div class="container">
         <h1>Grade Statistics Analysis</h1>
         
